@@ -81,6 +81,10 @@ Imperium-OS/
 
 ---
 
+## ⚖️ License
+
+**All rights reserved.** This repository contains only the marketing website and installer scripts — the Imperium OS application source code is **closed-source** and is not part of this repository. See [LICENSE](LICENSE).
+
 ## 👤 Author
 
 Sebastián García Mamani · © 2026 Imperium OS
