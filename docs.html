@@ -322,6 +322,12 @@ if (Test-Path $BaseDir) {
     Remove-Item $BaseDir -Recurse -Force
     Write-Host "  [OK] Carpeta base eliminada: $BaseDir" -ForegroundColor Green
 }
+$coreDir = Join-Path $env:LOCALAPPDATA "Imperium OS"
+$coreBackup = Join-Path $coreDir "ext_backup.json"
+if (Test-Path $coreBackup) {
+    Remove-Item $coreBackup -Force
+    Write-Host "  [OK] Backup de extension eliminado: $coreBackup" -ForegroundColor Green
+}
 Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "ImperiumSentinel" -ErrorAction SilentlyContinue
 Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "ImperiumMonitor" -ErrorAction SilentlyContinue
 
