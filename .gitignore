@@ -4,6 +4,9 @@ IMPERIUM_OS_Setup_*.zip
 *.exe
 *.zip
 
+# Scripts propietarios de instalación/desinstalación — se mantienen fuera del repo público
+scripts/
+
 # Sistema / editor
 Thumbs.db
 Desktop.ini

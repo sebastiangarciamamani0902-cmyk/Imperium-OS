@@ -31,7 +31,7 @@ Imperium OS also ships a **Chrome extension** for browser protection:
 - **Settings** — open tabs, languages, YouTube API keys
 - **YouTube Guard** — 20 apostles monitoring your YouTube consumption
 
-**Install:** [Chrome Web Store](https://chromewebstore.google.com/detail/ajilohlkmkjipipjagpnokhinhbjfkfb) • [Copy the install script](https://sebastiangarciamamani0902-cmyk.github.io/Imperium-OS/script.html)
+**Install:** [Chrome Web Store](https://chromewebstore.google.com/detail/ajilohlkmkjipipjagpnokhinhbjfkfb)
 
 ---
 
@@ -40,12 +40,6 @@ Imperium OS also ships a **Chrome extension** for browser protection:
 1. Download **[ImperiumOS_Setup_32.0.0.exe](https://github.com/sebastiangarciamamani0902-cmyk/Imperium-OS/releases/download/v32.0.0/ImperiumOS_Setup_32.0.0.exe)** from the GitHub Release.
 2. Run the installer (**requires administrator**).
 3. Launch **Imperium OS** from the Start Menu or desktop shortcut.
-
-### Manual / scripting install (alternative)
-- `scripts/imperium_install.ps1` — full install via PowerShell (run as Administrator).
-- `scripts/INSTALL.bat` — quick batch installer.
-- `scripts/imperium_uninstall.ps1` — roll back everything Imperium OS installed.
-- `scripts/UNINSTALL.bat` — batch uninstaller.
 
 > ⚠️ **Note:** the installer stores user data in `%LOCALAPPDATA%\Imperium OS`.
 
@@ -58,17 +52,12 @@ Imperium-OS/
 ├── index.html                  # Landing page (DESKTOP / EXTENSION)
 ├── privacy.html                # Privacy policy
 ├── docs.html                   # Documentation
-├── script.html                 # Chrome extension install script
 ├── style.css                   # Site styles
 ├── vercel.json                 # Optional Vercel deployment config
-├── screenshots/                # Product screenshots used on the site
-└── scripts/                    # Windows install / uninstall helpers
-    ├── imperium_install.ps1
-    ├── EXT_FULL_INSTALL_ALL.ps1
-    ├── imperium_uninstall.ps1
-    ├── INSTALL.bat
-    └── UNINSTALL.bat
+└── screenshots/                # Product screenshots used on the site
 ```
+
+> 🔒 The Imperium OS **application source code is not part of this repository** and remains closed-source and proprietary.
 
 ---
 

@@ -62,7 +62,6 @@
       padding: 10px 12px; color: var(--cyan); display: inline-block; margin: 4px 0; word-break: break-all;
     }
     .doc-a { color: var(--cyan); text-decoration: underline; text-underline-offset: 3px; }
-    #uninstBtn:hover { background: var(--orange) !important; border-color: var(--orange) !important; }
 
     @media (max-width: 800px) {
       .docs-shell { display: block; padding-left: 0; }
@@ -249,110 +248,9 @@
           <p>Removing the managed extension should be done through the official administrator procedure, which removes the Imperium OS policies and associated protection components.</p>
         </div>
       </div>
-        <h3 style="font:700 13px 'JetBrains Mono',monospace;color:var(--orange);letter-spacing:1.5px;margin:20px 0 8px;">Uninstall Script (Extension)</h3>
-        <p style="max-width:720px;color:var(--text);font-size:15px;line-height:1.5;margin:0 0 10px;">Copy the script below, save it as <span class="doc-code">imperium_uninstall.ps1</span>, then run it as Administrator in PowerShell to roll back what Imperium OS installed on this device.</p>
-        <div style="display:flex;justify-content:flex-start;margin-bottom:8px;max-width:720px;">
-          <button id="uninstBtn" onclick="copyUninst()" style="display:inline-flex;align-items:center;gap:10px;padding:9px 16px;font:700 12px 'JetBrains Mono',monospace;letter-spacing:1.5px;border:1px solid var(--cyan);background:var(--cyan);color:#031016;cursor:pointer;transition:.25s;"><svg id="uninstIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:15px;height:15px;fill:#031016;display:block;"><path d="M16 1H4c-1.1 0-2 .9-2 2v13h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg><span id="uninstLabel">COPY SCRIPT</span></button>
-        </div><pre id="uninstCode" style="background:#06121c;border:1px solid var(--line);border-radius:6px;padding:14px 16px;font:12px/1.45 'JetBrains Mono',monospace;color:var(--cyan);overflow:auto;max-height:460px;white-space:pre;user-select:all;"># ============================================================
-#  IMPERIUM OS - UNINSTALL / ROLLBACK (portable)
-#  v32.0
-#  Retira SOLO lo que el instalador de Imperium creo.
-#  - Politicas de extension (Forcelist/ExtensionSettings) en Chrome
-#  - Hardening incognito/invitado/perfiles en Chrome y Edge
-#  - Tareas programadas ImperiumOS-*
-#  - Carpeta %LOCALAPPDATA%\ImperiumOS (guard/reparador/logs)
-#  NO toca datos del usuario, Core ni el Megafiltro/extension instalada
-#  en Chrome (eso lo gestiona Chrome, no este script).
-# ============================================================
-
-if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "Se requieren permisos de administrador. Elevando..." -ForegroundColor Yellow
-    Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
-    exit
-}
-
-$ErrorActionPreference = "SilentlyContinue"
-$ExtensionID = "ajilohlkmkjipipjagpnokhinhbjfkfb"
-
-Write-Host ""
-Write-Host "==============================================" -ForegroundColor Yellow
-Write-Host "  IMPERIUM OS - DESINSTALAR / ROLLBACK" -ForegroundColor Yellow
-Write-Host "==============================================" -ForegroundColor Yellow
-Write-Host ""
-
-# ---------- 1. Quitar politica de extension en Chrome ----------
-$polBase = "HKLM:\SOFTWARE\Policies\Google\Chrome"
-$fcList = Join-Path $polBase "ExtensionInstallForcelist"
-# Quitar solo la entrada "1" si corresponde a Imperium; dejar otras politicas intactas
-$cur = (Get-ItemProperty $fcList -Name "1" -ErrorAction SilentlyContinue)."1"
-if ($cur -like "$ExtensionID*") {
-    Remove-ItemProperty $fcList -Name "1" -ErrorAction SilentlyContinue
-    Write-Host "  [OK] Quitada ExtensionInstallForcelist[1] (Imperium)" -ForegroundColor Green
-}
-
-# ExtensionSettings: quitar solo la clave de Imperium dentro del JSON si es posible
-$curSet = (Get-ItemProperty $polBase -Name "ExtensionSettings" -ErrorAction SilentlyContinue).ExtensionSettings
-if ($curSet) {
-    try {
-        $obj = $curSet | ConvertFrom-Json
-        if ($obj.PSObject.Properties.Name -contains $ExtensionID) {
-            $obj.PSObject.Properties.Remove($ExtensionID)
-            if ($obj.PSObject.Properties.Count -gt 0) {
-                New-ItemProperty $polBase -Name "ExtensionSettings" -PropertyType String -Value ($obj | ConvertTo-Json -Compress) -Force | Out-Null
-            } else {
-                Remove-ItemProperty $polBase -Name "ExtensionSettings" -ErrorAction SilentlyContinue
-            }
-            Write-Host "  [OK] Quitada ExtensionSettings de Imperium" -ForegroundColor Green
-        }
-    } catch { Write-Host "  [--] ExtensionSettings no modificada (no parseable)" -ForegroundColor DarkGray }
-}
-
-# ---------- 2. Quitar hardening incognito/invitado/perfiles (Chrome + Edge) ----------
-$hardeningKeys = @(
-    "IncognitoModeAvailability",
-    "BrowserGuestModeEnabled",
-    "BrowserAddPersonEnabled",
-    "BrowserProfilePickerAvailability",
-    "InPrivateModeAvailability",
-    "BrowserAddProfileEnabled",
-    "PreventEdgeDownloadEnabled"
-)
-foreach ($base in @($polBase, "HKLM:\SOFTWARE\Policies\Microsoft\Edge")) {
-    foreach ($k in $hardeningKeys) {
-        Remove-ItemProperty $base -Name $k -ErrorAction SilentlyContinue
-    }
-    Write-Host "  [OK] Quitado hardening incognito/invitado/perfiles: $base" -ForegroundColor Green
-}
-
-# ---------- 3. Tareas programadas ----------
-@("ImperiumOS-HealthCheck","ImperiumOS-Reapply-Boot","ImperiumOS-Reapply-Login","ImperiumOS-ExtensionGuard","ImperiumOS-UpdateServer") | ForEach-Object {
-    if (Get-ScheduledTask -TaskName $_ -ErrorAction SilentlyContinue) {
-        Unregister-ScheduledTask -TaskName $_ -Confirm:$false -ErrorAction SilentlyContinue
-        Write-Host "  [OK] Tarea eliminada: $_" -ForegroundColor Green
-    }
-}
-
-# ---------- 4. Carpeta base + autostart ----------
-$BaseDir = Join-Path $env:LOCALAPPDATA "ImperiumOS"
-if (Test-Path $BaseDir) {
-    Remove-Item $BaseDir -Recurse -Force
-    Write-Host "  [OK] Carpeta base eliminada: $BaseDir" -ForegroundColor Green
-}
-Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "ImperiumSentinel" -ErrorAction SilentlyContinue
-Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "ImperiumMonitor" -ErrorAction SilentlyContinue
-
-# ---------- 5. Notas ----------
-Write-Host ""
-Write-Host "==============================================" -ForegroundColor Yellow
-Write-Host "  ROLLBACK COMPLETO" -ForegroundColor Yellow
-Write-Host "==============================================" -ForegroundColor Yellow
-Write-Host ""
-Write-Host "  NOTA: la extension ya instalada en Chrome no se elimina desde aqui." -ForegroundColor DarkGray
-Write-Host "  Con la politica retirada, Chrome dejara de tratarla como administrada" -ForegroundColor DarkGray
-Write-Host "  y podras desinstalarla desde chrome://extensions si lo deseas." -ForegroundColor DarkGray
-Write-Host ""
-Read-Host "Presiona ENTER para cerrar"
-</pre>
+        <h3 style="font:700 13px 'JetBrains Mono',monospace;color:var(--orange);letter-spacing:1.5px;margin:20px 0 8px;">Official Uninstaller</h3>
+        <p style="max-width:720px;color:var(--text);font-size:15px;line-height:1.5;margin:0 0 10px;">The official uninstaller for the managed extension is distributed only with Imperium OS. Contact the vendor administrator to obtain it.</p>
+      </div>
 
       </div>
 
@@ -415,18 +313,6 @@ Read-Host "Presiona ENTER para cerrar"
 
 
 
-  <script>
-    function copyUninst() {
-      var code = document.getElementById('uninstCode');
-      var btn = document.getElementById('uninstLabel');
-      if (!code || !btn) return;
-      function done() { btn.textContent = "COPIED"; var ic=document.getElementById("uninstIcon"); if(ic){ ic.innerHTML="<path d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/>"; } }
-      var s = code.textContent;
-      function fb(t){ var x=document.createElement('textarea'); x.value=t; document.body.appendChild(x); x.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(x); }
-      if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(s).then(done, function(){ fb(s); done(); }); }
-      else { fb(s); done(); }
-      setTimeout(function(){ btn.textContent = 'COPY SCRIPT'; }, 2000);
-    }
   </script>
 </body>
 </html>
