@@ -1,0 +1,10 @@
+# Binarios grandes — subidos via GitHub Releases, no a Pages
+ImperiumOS_Setup_*.exe
+IMPERIUM_OS_Setup_*.zip
+*.exe
+*.zip
+
+# Sistema / editor
+Thumbs.db
+Desktop.ini
+.DS_Store

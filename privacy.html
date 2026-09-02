@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050912">
+  <meta name="description" content="Imperium OS privacy policy: what data the extension processes and why.">
+  <title>Privacy Policy - Imperium OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .docs-shell { z-index: 2; padding: 56px 0 90px; }
+    .docs-main { max-width: 820px; margin: 0 auto; }
+    .docs-hero { border-bottom: 1px solid var(--line); padding-bottom: 28px; margin-bottom: 36px; }
+    .docs-hero h1 { font-size: clamp(40px, 6vw, 66px); line-height: .9; letter-spacing: -1px; margin: 0 0 10px; }
+    .docs-hero h1 span { color: var(--cyan); }
+    .docs-hero h1 b { color: var(--orange); font-style: normal; }
+    .docs-hero p { color: var(--muted); font-size: 18px; margin: 0; max-width: 680px; }
+    .doc-block { margin-bottom: 44px; }
+    .doc-overline { font: 700 11px 'JetBrains Mono', monospace; letter-spacing: 3px; color: var(--orange); text-transform: uppercase; margin: 0 0 6px; }
+    .doc-block h2 { font: 700 24px 'JetBrains Mono', monospace; color: var(--cyan); margin: 0 0 14px; letter-spacing: .5px; }
+    .doc-block p { color: var(--text); font-size: 16px; line-height: 1.6; margin: 0 0 12px; }
+    .doc-block ul { margin: 0 0 12px; padding-left: 20px; }
+    .doc-block li { color: var(--text); font-size: 15px; line-height: 1.6; margin: 6px 0; }
+    .doc-block code { font-family: 'JetBrains Mono', monospace; color: var(--cyan); }
+    .note { color: var(--muted); font-size: 14px; margin-top: 24px; }
+    .hl { color: var(--orange); font-weight: 600; }
+    .updated { color: var(--muted); font-size: 15px; }
+  </style>
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="grid"></div>
+
+  <header class="nav shell">
+    <a class="brand" href="index.html" aria-label="Imperium OS home">
+      <img class="brand-mark" src="imperium-lightning.jpeg" alt="Imperium OS lightning mark"><span>Imperium</span><b>OS</b>
+    </a>
+    <div class="tab-bar">
+      <a class="tab-btn" href="index.html" style="text-decoration:none;">HOME</a>
+      <a class="tab-btn" href="docs.html" style="text-decoration:none;">DOCS</a>
+      <span class="tab-btn" style="color:var(--text);border-color:var(--cyan);">PRIVACY</span>
+    </div>
+  </header>
+
+  <main class="docs-shell shell" style="display:block;">
+    <div class="docs-main">
+      <div class="docs-hero">
+        <h1><span>Imperium OS</span> <b>Privacy Policy</b></h1>
+        <p class="updated"><strong>Last updated:</strong> August 12, 2026</p>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Overview</p>
+        <h2>Our commitment</h2>
+        <p>
+          Imperium OS is a protection and productivity extension that <span class="hl">filters domains</span>,
+          network requests, and navigations to help you avoid sites and content that
+          interfere with productive browsing. This policy explains what data the extension
+          processes, why it does so, where that data lives, and how you can control it.
+          Simply put: Imperium OS <span class="hl">keeps your data local</span>, <span class="hl">never sells it</span>, and only reaches
+          out to the internet when you actively use a feature that requires it.
+        </p>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Data</p>
+        <h2>Data the extension processes</h2>
+        <p>To provide its core functions, Imperium OS processes the following data:</p>
+        <ul>
+          <li><strong>Web history:</strong> <span class="hl">URLs, domains, and navigation events</span> needed to apply the extension's filtering rules.</li>
+          <li><strong>Site content:</strong> elements of web pages required for the extension's protection features to operate.</li>
+          <li><strong>Browsing activity:</strong> network requests and navigation destinations evaluated by the filter.</li>
+          <li><strong>Local configuration:</strong> <span class="hl">allowed sites</span>, channels, preferences, language, protection state, and verification cache.</li>
+          <li><strong>Optional YouTube key:</strong> if you enter one, it is stored locally and used only to perform the YouTube channel searches you request.</li>
+        </ul>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Use</p>
+        <h2>How the data is used</h2>
+        <p>
+          Data is used exclusively for Imperium OS's core purpose: <span class="hl">blocking classified sites</span>
+          and requests, applying navigation controls, showing your protection state, and
+          preserving your settings across sessions and updates. Imperium OS does not use your
+          data for <span class="hl">advertising</span>, commercial profiling, credit assessment, or lending.
+        </p>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Storage</p>
+        <h2>Storage and transfer</h2>
+        <p>
+          The extension's configuration and state are stored locally using
+          <code><span class="hl">chrome.storage</span></code>. Navigation events intended for the <span class="hl">Sentinel service</span>
+          are sent only to the local Imperium OS service on your own device, never to a
+          third-party server.
+        </p>
+        <p>
+          Some optional directory and search features may make requests to DuckDuckGo,
+          Google/YouTube, or other queried domains in order to return results or verify that
+          a domain is reachable. These requests occur only when you actively use those features.
+        </p>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Code integrity</p>
+        <h2>Remote content and remote code</h2>
+        <p>
+          Imperium OS does not download or execute <span class="hl">remote JavaScript or WebAssembly</span>. All
+          executable code in the extension is bundled in the published release. External
+          requests only receive data, search results, or API responses; they are never used
+          to run code on your device.
+        </p>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Retention</p>
+        <h2>Retention and deletion</h2>
+        <p>
+          Local data remains in your <span class="hl">browser profile</span> until you modify it, uninstall the
+          extension, or clear the extension's data from Chrome. External requests and the
+          <span class="hl">Sentinel service</span> <span class="hl">apply their own retention policies</span>.
+        </p>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Privacy</p>
+        <h2>Sharing and sale</h2>
+        <p>
+          Imperium OS <span class="hl">does not sell user data</span> and does not transfer it to third parties for
+          any purpose other than the extension's single purpose. The transfers described
+          above occur only when necessary to provide a feature you have requested.
+        </p>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Security</p>
+        <h2>Security</h2>
+        <p>
+          Local data stays on your device and is <span class="hl">never transmitted to Imperium OS servers</span>.
+          Any credentials you provide (such as the <span class="hl">optional YouTube key</span>) are stored in your
+          <span class="hl">browser profile</span> and used solely for the feature that requires them.
+        </p>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Control</p>
+        <h2>Your choices</h2>
+        <ul>
+          <li>Clear the extension's data from <code>chrome://extensions</code> at any time.</li>
+          <li>Uninstall the extension to stop all processing immediately.</li>
+          <li>Edit or remove locally stored settings and the <span class="hl">optional YouTube key</span> through the extension's interface.</li>
+        </ul>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Contact</p>
+        <h2>Contact</h2>
+        <p>
+          For questions about this policy or about privacy, contact the <span class="hl">project owner</span> at
+          <code>sebastiangarciamamani0902@gmail.com</code>.
+        </p>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Updates</p>
+        <h2>Changes to this policy</h2>
+        <p>
+          If features or the data processed change, this policy will be updated before or at
+          the same time as the corresponding Imperium OS release. Material changes will be
+          reflected here with an <span class="hl">updated "Last updated" date</span>.
+        </p>
+        <p class="note">Imperium OS does not sell your data and does not use it for <span class="hl">advertising</span>, commercial profiling, credit, or lending.</p>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

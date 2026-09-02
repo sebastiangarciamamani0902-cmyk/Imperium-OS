@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050912">
+  <meta name="description" content="Imperium OS documentation: desktop app and browser extension guides.">
+  <title>Documentation — Imperium OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .docs-shell { z-index: 2; padding: 56px 0 90px; padding-left: 306px; }
+
+    .docs-side {
+      position: fixed; top: 110px; left: max(24px, calc(50% - 604px)); width: 250px;
+      border: 1px solid var(--line); border-radius: 10px;
+      background: var(--panel); padding: 22px 20px;
+      z-index: 50; transform: none;
+    }
+    .docs-side .side-group { margin-bottom: 20px; }
+    .docs-side .side-group:last-child { margin-bottom: 0; }
+    .docs-side .side-tag {
+      font: 700 11px 'JetBrains Mono', monospace; letter-spacing: 2px;
+      color: var(--orange); margin: 0 0 8px;
+    }
+    .docs-side .side-link {
+      display: block; font: 500 13px 'JetBrains Mono', monospace;
+      color: var(--muted); text-decoration: none; padding: 5px 10px;
+      border-left: 2px solid transparent; transition: .2s;
+    }
+    .docs-side .side-link:hover { color: var(--text); border-left-color: var(--cyan); }
+
+    .docs-main { min-width: 0; }
+    .docs-hero { border-bottom: 1px solid var(--line); padding-bottom: 28px; margin-bottom: 36px; }
+    .docs-hero h1 { font-size: clamp(40px, 6vw, 72px); line-height: .9; letter-spacing: -1px; margin: 0 0 10px; }
+    .docs-hero h1 span { color: var(--cyan); }
+    .docs-hero h1 b { color: var(--orange); font-style: normal; }
+    .docs-hero p { color: var(--muted); font-size: 18px; margin: 0; max-width: 640px; }
+
+    .doc-block { margin-bottom: 52px; scroll-margin-top: 96px; }
+    .doc-overline { font: 700 11px 'JetBrains Mono', monospace; letter-spacing: 3px; color: var(--orange); text-transform: uppercase; margin: 0 0 6px; }
+    .doc-block h2 { font: 700 28px 'JetBrains Mono', monospace; color: var(--cyan); margin: 0 0 14px; letter-spacing: .5px; }
+    .doc-block p { color: var(--text); font-size: 17px; line-height: 1.55; margin: 0 0 12px; max-width: 720px; }
+    .doc-block ul { margin: 0 0 12px; padding-left: 20px; color: var(--text); font-size: 17px; line-height: 1.55; max-width: 720px; }
+    .doc-block li { margin-bottom: 6px; }
+    .doc-block strong { color: var(--orange); font-weight: 600; }
+    .doc-block em.accent { color: var(--cyan); font-style: normal; }
+    .doc-card {
+      margin: 16px 0; padding: 16px 18px; border: 1px solid var(--line);
+      border-left: 3px solid var(--cyan); border-radius: 6px;
+      background: var(--panel-2); max-width: 720px;
+    }
+    .doc-card.warn { border-left-color: var(--orange); }
+    .doc-card .dc-label { font: 700 11px 'JetBrains Mono', monospace; letter-spacing: 2px; color: var(--cyan); text-transform: uppercase; margin-bottom: 6px; }
+    .doc-card.warn .dc-label { color: var(--orange); }
+    .doc-card p { margin: 0; }
+    .doc-code {
+      font-family: 'JetBrains Mono', monospace; font-size: 13px;
+      background: #06121c; border: 1px solid var(--line); border-radius: 6px;
+      padding: 10px 12px; color: var(--cyan); display: inline-block; margin: 4px 0; word-break: break-all;
+    }
+    .doc-a { color: var(--cyan); text-decoration: underline; text-underline-offset: 3px; }
+    #uninstBtn:hover { background: var(--orange) !important; border-color: var(--orange) !important; }
+
+    @media (max-width: 800px) {
+      .docs-shell { display: block; padding-left: 0; }
+      .docs-side { position: static; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="noise"></div>
+  <div class="grid"></div>
+
+  <header class="nav shell">
+    <a class="brand" href="index.html" aria-label="Imperium OS home">
+      <img class="brand-mark" src="imperium-lightning.jpeg" alt="Imperium OS lightning mark"><span>Imperium</span><b>OS</b>
+    </a>
+    <div class="tab-bar">
+      <a class="tab-btn" href="index.html" style="text-decoration:none;">HOME</a>
+      <span class="tab-btn" style="color:var(--text);border-color:var(--cyan);">DOCUMENTATION</span>
+      <a class="tab-btn" href="privacy.html" style="text-decoration:none;">PRIVACY</a>
+    </div>
+  </header>
+
+  <main class="docs-shell shell" style="display:block;">
+    <aside class="docs-side" style="position:fixed; top:110px; left:max(24px, calc(50% - 604px)); width:250px; z-index:50;">
+      <div class="side-group">
+        <p class="side-tag">DESKTOP</p>
+        <a class="side-link" href="#getting-started">Getting Started</a>
+        <a class="side-link" href="#how-it-works">How it works</a>
+        <a class="side-link" href="#reports">Reports</a>
+        <a class="side-link" href="#updates-core">Updates</a>
+        <a class="side-link" href="#uninstall-core">Uninstall</a>
+      </div>
+      <div class="side-group">
+        <p class="side-tag">EXTENSION</p>
+        <a class="side-link" href="#installation">Installation</a>
+        <a class="side-link" href="#blocking">Blocking</a>
+        <a class="side-link" href="#whitelist">Whitelist</a>
+        <a class="side-link" href="#updates-ext">Updates</a>
+        <a class="side-link" href="#uninstall-ext">Uninstall</a>
+      </div>
+      <div class="side-group">
+        <p class="side-tag">SUPPORT</p>
+        <a class="side-link" href="#troubleshooting">Troubleshooting</a>
+        <a class="side-link" href="#limits">Known Limitations</a>
+        <a class="side-link" href="#suggestions">Suggestions</a>
+        <a class="side-link" href="#contact">Contact</a>
+      </div>
+      <div class="side-group">
+        <p class="side-tag">PRIVACY</p>
+        <a class="side-link" href="#privacy">Privacy &amp; Data</a>
+      </div>
+    </aside>
+
+    <section class="docs-main">
+      <div class="docs-hero">
+        <h1><span>Imperium OS</span> <b>Documentation</b></h1>
+        <p>Guides for the Imperium OS desktop application and the browser extension. Learn how to install, use, and manage both, and how your data is handled.</p>
+      </div>
+
+      <!-- ============ DESKTOP ============ -->
+      <div class="doc-block">
+        <p class="doc-overline">Desktop</p>
+        <h2 id="getting-started">Getting Started</h2>
+        <p>Imperium OS is a full desktop application for Windows 10 (build 1809) and later, and Windows 11. It is distributed as a signed installer (<strong>ImperiumOS_Setup_32.0.0.exe</strong>) built with Inno Setup, and it runs with administrative privileges.</p>
+        <ul>
+          <li><strong>Requirements:</strong> Windows 10 1809+ or Windows 11, 64-bit, plus administrator rights to install.</li>
+          <li><strong>Install:</strong> run the installer and follow the steps. It installs the <em class="accent">ImperiumOS.exe</em> application, registers it in the Start Menu, and optionally adds a desktop shortcut and a launch-on-login task.</li>
+          <li><strong>First launch:</strong> a full-screen boot splash loads configuration, language, memory, achievements, integrity, neural engine, sleep mode, skins, missions and AI, then opens the main workspace.</li>
+          <li><strong>Profile:</strong> a new profile starts at Level 1 with 0 credits, 0 XP and 100% integrity,.</li>
+        </ul>
+        <p>Your data lives in <span class="doc-code">%LOCALAPPDATA%\Imperium OS</span>, stored in local SQLite databases. A single instance is enforced: opening a second copy focuses the existing window.</p>
+        <div class="doc-card">
+          <p class="dc-label">Note</p>
+          <p>The installer also hardens the system: it adds a hosts-file blocklist for known distractors, terminates distracting apps (Discord, Telegram, WhatsApp, Steam, Spotify, Netflix and others), flushes DNS, and enables notification "ghost mode".</p>
+        </div>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Desktop</p>
+        <h2 id="how-it-works">How it works</h2>
+        <p>A session is a timed focus block you commit to. Imperium OS tracks what you actually did, grades the result, and rewards or penalizes you accordingly.</p>
+        <h2 style="font-size:19px;color:var(--orange);">Modes</h2>
+        <ul>
+          <li><strong>Deep Work</strong> — the core timer. Pick <strong>25, 50, 90, 180</strong> minutes or a custom duration. You commit to a task before starting. Requires a configured AI model for verification.</li>
+          <li><strong>Sprint</strong> — an acceleration protocol that counts timer steps faster (5s per tick) and awards bonus progress toward sprint achievements.</li>
+          <li><strong>Meditation</strong> — guided breathing protocols (Tactical 2, Box 5, Relax 15, and unlockable ones like Wim Hof and deep focus) with mantras and audio. Rewards <strong>XP = minutes × 10</strong> and <strong>Credits = minutes × 5</strong>.</li>
+        </ul>
+        <h2 style="font-size:19px;color:var(--orange);">Session grading</h2>
+        <p>Each completed session is judged. If AI is available, the productivity score comes from analyzing your evidence; otherwise a heuristic reviews your real browser history. Results map to grades from <strong>S+</strong> (95+) down to <strong>F-</strong>. Higher grades pay credits, XP and integrity; failure costs you all three.</p>
+        <div class="doc-card">
+          <p class="dc-label">Grade rewards</p>
+          <p>S+ +800 credits · S +500 · A +250 · B +100 · C 0 · D −150 · E −300 · F −500 · F- −800 (XP and integrity change accordingly).</p>
+        </div>
+        <h2 style="font-size:19px;color:var(--orange);">Ranks, integrity &amp; anti-cheat</h2>
+        <ul>
+          <li><strong>Ranks:</strong> your XP determines your title — Novato, Elite, Comandante, Dios.</li>
+          <li><strong>Integrity:</strong> starts at 100%. Tampering with the database, cheating the clock, or racking up failing sessions drops it. At 0, the whole UI is locked down and missions are frozen.</li>
+          <li><strong>Protection:</strong> the database is signed (SHA-256), the clock is checked against an external time source, and a background engine monitors distracting activity and captures periodic evidence.</li>
+          <li><strong>Skins, Music &amp; Shop:</strong> unlock 20 interface skins, buy focus audio tracks, and customize the battlefield with credits earned from sessions and achievements.</li>
+        </ul>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Desktop</p>
+        <h2 id="reports">Reports</h2>
+        <p>The <strong>Report Vault</strong> is your evidence gallery. Every completed mission stores proof with its metadata so you can review what actually happened in each session.</p>
+        <ul>
+          <li><strong>Evidence:</strong> periodic captures and a final proof screenshot per mission, plus a tile mosaic when AI analysis is active.</li>
+          <li><strong>Metadata:</strong> each entry records the date/time, grade (<span class="doc-code">S+</span> to <span class="doc-code">F-</span>), score out of 100, and a short task description.</li>
+          <li><strong>Navigation:</strong> browse the full session gallery and inspect the stored metadata for any mission.</li>
+          <li><strong>Cleanup:</strong> use the <strong>Weekly</strong> and <strong>Monthly</strong> buttons to delete evidence older than 7 or 30 days and reclaim disk space.</li>
+        </ul>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Desktop</p>
+        <h2 id="updates-core">Updates</h2>
+        <p>New desktop releases are distributed through the official Imperium OS installer. Installing a newer version preserves your existing profile, unless the release notes specify otherwise.</p>
+      </div>
+<h2 id="uninstall-core">Uninstall</h2>
+        <p>To remove the desktop application, use the standard uninstaller from the Start Menu (<span class="doc-code">Imperium OS</span> program group).</p>
+        <ul>
+          <li>Removes the application files and the <span class="doc-code">ImperiumOS</span> launch-on-login registry entry.</li>
+          <li>Deletes the profile: session data, vault, evidence, logs, cache and local databases in <span class="doc-code">%LOCALAPPDATA%\Imperium OS</span>.</li>
+          <li>Cleans up temporary state files created during use.</li>
+        </ul>
+        <div class="doc-card warn">
+          <p class="dc-label">Note</p>
+          <p>Removing the Core application does <strong>not</strong> remove the browser extension. Uninstall the extension separately (see the Extension &gt; Uninstall section).</p>
+        </div>
+      </div>
+
+      <!-- ============ EXTENSION ============ -->
+      <div class="doc-block">
+        <p class="doc-overline">Extension</p>
+        <h2 id="installation">Installation</h2>
+        <p>Imperium OS for Chrome provides browser protection and site blocking. It is installed as a managed extension using your organization profile.</p>
+        <ul>
+          <li><strong>Requirements:</strong> Windows 10/11, Google Chrome, and administrator rights for managed installation.</li>
+          <li><strong>Store install:</strong> install from the Chrome Web Store so it is force-deployed to browsers on your managed device.</li>
+          <li><strong>Managed installation:</strong> Imperium OS can be force-installed on Chrome through Windows/Chrome management policies. This prevents removal from the normal extension manager. An official installer applies the store-force policies, periodic guard tasks, and the incognito/guest/account profile blocks.</li>
+        </ul>
+        <div class="doc-card warn">
+          <p class="dc-label">Admin required</p>
+          <p>Managed installation relies on Windows/Chrome policies that require an administrator account on the device. A standard user cannot trigger this install.</p>
+        </div>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Extension</p>
+        <h2 id="blocking">Blocking</h2>
+        <p>The extension filters unwanted sites using several layers, so distractions and harmful content are cut off before and after page load.</p>
+        <ul>
+          <li><strong>Rules:</strong> hard blocklists shut down known distractors and adult content instantly.</li>
+          <li><strong>Scoring engine:</strong> domains and pages are scored by reputation, path, query, and search-signal heuristics. Scores above the block threshold are refused automatically.</li>
+          <li><strong>Network level:</strong> a declarative ruleset blocks major distracting domains at the network layer before the page renders.</li>
+          <li><strong>Browsing protection:</strong> when a blocked site is opened it is redirected to a blank tab. Incognito, guest and new-account profiles are blocked, and tabs containing blocked content are closed.</li>
+          <li><strong>YouTube Guard:</strong> YouTube is locked unless the sealed apostles (allowed channels) are configured.</li>
+        </ul>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Extension</p>
+        <h2 id="whitelist">Whitelist</h2>
+        <p>You decide which sites are allowed to pass the filter.</p>
+        <ul>
+          <li><strong>Allow a site:</strong> open the extension popup, go to the White List tab, type the handle, name or URL, and press <strong>Add</strong>. The site is then permitted.</li>
+          <li><strong>Remove:</strong> delete any site from the list with its × button, or reset the whole list.</li>
+          <li><strong>By path:</strong> some domains are opened only at specific paths (for example a work tool or a direct message), while the rest stays blocked.</li>
+          <li><strong>Self-guarding:</strong> the whitelist is auto-corrected — a site the engine considers malicious or adult cannot sneak in, even if added by hand.</li>
+          <li><strong>YouTube:</strong> seal your apostle channels for <strong>7 days</strong> or <strong>1 month</strong> to keep YouTube locked to approved channels only.</li>
+        </ul>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Extension</p><h2 id="updates-ext">Updates</h2>
+        <p>Extensions installed from the Chrome Web Store receive updates automatically through Chrome when a new version is published. No action is required on your part.</p>
+      </div>
+<h2 id="uninstall-ext">Uninstall</h2>
+        <p>Because the extension is managed by system policy, it cannot be removed from Chrome’s normal extension manager.</p>
+        <p>To remove Imperium OS cleanly, use the official administrator uninstall procedure. It stops the guard/update tasks, removes the Imperium OS policies, restores registry values, clears the hosts-file block and DNS cache, and deletes the extension files.</p>
+        <div class="doc-card warn">
+          <p class="dc-label">Admin only</p>
+          <p>Removing the managed extension should be done through the official administrator procedure, which removes the Imperium OS policies and associated protection components.</p>
+        </div>
+      </div>
+        <h3 style="font:700 13px 'JetBrains Mono',monospace;color:var(--orange);letter-spacing:1.5px;margin:20px 0 8px;">Uninstall Script (Extension)</h3>
+        <p style="max-width:720px;color:var(--text);font-size:15px;line-height:1.5;margin:0 0 10px;">Copy the script below, save it as <span class="doc-code">imperium_uninstall.ps1</span>, then run it as Administrator in PowerShell to roll back what Imperium OS installed on this device.</p>
+        <div style="display:flex;justify-content:flex-start;margin-bottom:8px;max-width:720px;">
+          <button id="uninstBtn" onclick="copyUninst()" style="display:inline-flex;align-items:center;gap:10px;padding:9px 16px;font:700 12px 'JetBrains Mono',monospace;letter-spacing:1.5px;border:1px solid var(--cyan);background:var(--cyan);color:#031016;cursor:pointer;transition:.25s;"><svg id="uninstIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:15px;height:15px;fill:#031016;display:block;"><path d="M16 1H4c-1.1 0-2 .9-2 2v13h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg><span id="uninstLabel">COPY SCRIPT</span></button>
+        </div><pre id="uninstCode" style="background:#06121c;border:1px solid var(--line);border-radius:6px;padding:14px 16px;font:12px/1.45 'JetBrains Mono',monospace;color:var(--cyan);overflow:auto;max-height:460px;white-space:pre;user-select:all;"># ============================================================
+#  IMPERIUM OS - UNINSTALL / ROLLBACK (portable)
+#  v32.0
+#  Retira SOLO lo que el instalador de Imperium creo.
+#  - Politicas de extension (Forcelist/ExtensionSettings) en Chrome
+#  - Hardening incognito/invitado/perfiles en Chrome y Edge
+#  - Tareas programadas ImperiumOS-*
+#  - Carpeta %LOCALAPPDATA%\ImperiumOS (guard/reparador/logs)
+#  NO toca datos del usuario, Core ni el Megafiltro/extension instalada
+#  en Chrome (eso lo gestiona Chrome, no este script).
+# ============================================================
+
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Write-Host "Se requieren permisos de administrador. Elevando..." -ForegroundColor Yellow
+    Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    exit
+}
+
+$ErrorActionPreference = "SilentlyContinue"
+$ExtensionID = "ajilohlkmkjipipjagpnokhinhbjfkfb"
+
+Write-Host ""
+Write-Host "==============================================" -ForegroundColor Yellow
+Write-Host "  IMPERIUM OS - DESINSTALAR / ROLLBACK" -ForegroundColor Yellow
+Write-Host "==============================================" -ForegroundColor Yellow
+Write-Host ""
+
+# ---------- 1. Quitar politica de extension en Chrome ----------
+$polBase = "HKLM:\SOFTWARE\Policies\Google\Chrome"
+$fcList = Join-Path $polBase "ExtensionInstallForcelist"
+# Quitar solo la entrada "1" si corresponde a Imperium; dejar otras politicas intactas
+$cur = (Get-ItemProperty $fcList -Name "1" -ErrorAction SilentlyContinue)."1"
+if ($cur -like "$ExtensionID*") {
+    Remove-ItemProperty $fcList -Name "1" -ErrorAction SilentlyContinue
+    Write-Host "  [OK] Quitada ExtensionInstallForcelist[1] (Imperium)" -ForegroundColor Green
+}
+
+# ExtensionSettings: quitar solo la clave de Imperium dentro del JSON si es posible
+$curSet = (Get-ItemProperty $polBase -Name "ExtensionSettings" -ErrorAction SilentlyContinue).ExtensionSettings
+if ($curSet) {
+    try {
+        $obj = $curSet | ConvertFrom-Json
+        if ($obj.PSObject.Properties.Name -contains $ExtensionID) {
+            $obj.PSObject.Properties.Remove($ExtensionID)
+            if ($obj.PSObject.Properties.Count -gt 0) {
+                New-ItemProperty $polBase -Name "ExtensionSettings" -PropertyType String -Value ($obj | ConvertTo-Json -Compress) -Force | Out-Null
+            } else {
+                Remove-ItemProperty $polBase -Name "ExtensionSettings" -ErrorAction SilentlyContinue
+            }
+            Write-Host "  [OK] Quitada ExtensionSettings de Imperium" -ForegroundColor Green
+        }
+    } catch { Write-Host "  [--] ExtensionSettings no modificada (no parseable)" -ForegroundColor DarkGray }
+}
+
+# ---------- 2. Quitar hardening incognito/invitado/perfiles (Chrome + Edge) ----------
+$hardeningKeys = @(
+    "IncognitoModeAvailability",
+    "BrowserGuestModeEnabled",
+    "BrowserAddPersonEnabled",
+    "BrowserProfilePickerAvailability",
+    "InPrivateModeAvailability",
+    "BrowserAddProfileEnabled",
+    "PreventEdgeDownloadEnabled"
+)
+foreach ($base in @($polBase, "HKLM:\SOFTWARE\Policies\Microsoft\Edge")) {
+    foreach ($k in $hardeningKeys) {
+        Remove-ItemProperty $base -Name $k -ErrorAction SilentlyContinue
+    }
+    Write-Host "  [OK] Quitado hardening incognito/invitado/perfiles: $base" -ForegroundColor Green
+}
+
+# ---------- 3. Tareas programadas ----------
+@("ImperiumOS-HealthCheck","ImperiumOS-Reapply-Boot","ImperiumOS-Reapply-Login","ImperiumOS-ExtensionGuard","ImperiumOS-UpdateServer") | ForEach-Object {
+    if (Get-ScheduledTask -TaskName $_ -ErrorAction SilentlyContinue) {
+        Unregister-ScheduledTask -TaskName $_ -Confirm:$false -ErrorAction SilentlyContinue
+        Write-Host "  [OK] Tarea eliminada: $_" -ForegroundColor Green
+    }
+}
+
+# ---------- 4. Carpeta base + autostart ----------
+$BaseDir = Join-Path $env:LOCALAPPDATA "ImperiumOS"
+if (Test-Path $BaseDir) {
+    Remove-Item $BaseDir -Recurse -Force
+    Write-Host "  [OK] Carpeta base eliminada: $BaseDir" -ForegroundColor Green
+}
+Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "ImperiumSentinel" -ErrorAction SilentlyContinue
+Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "ImperiumMonitor" -ErrorAction SilentlyContinue
+
+# ---------- 5. Notas ----------
+Write-Host ""
+Write-Host "==============================================" -ForegroundColor Yellow
+Write-Host "  ROLLBACK COMPLETO" -ForegroundColor Yellow
+Write-Host "==============================================" -ForegroundColor Yellow
+Write-Host ""
+Write-Host "  NOTA: la extension ya instalada en Chrome no se elimina desde aqui." -ForegroundColor DarkGray
+Write-Host "  Con la politica retirada, Chrome dejara de tratarla como administrada" -ForegroundColor DarkGray
+Write-Host "  y podras desinstalarla desde chrome://extensions si lo deseas." -ForegroundColor DarkGray
+Write-Host ""
+Read-Host "Presiona ENTER para cerrar"
+</pre>
+
+      </div>
+
+      <!-- ============ SUPPORT ============ -->
+      <div class="doc-block">
+        <p class="doc-overline">Support</p>
+        <h2 id="troubleshooting">Troubleshooting</h2>
+        <ul>
+          <li><strong>The extension does not persist after restart.</strong> — Re-run the installer as Administrator and confirm the device is admin + domain / Azure AD joined so the force-install policy applies.</li>
+          <li><strong>Chrome reports "installed by administrator" with no Remove button.</strong> — That is expected for a managed, force-installed extension.</li>
+          <li><strong>Core integrity reaches 0 and missions are locked.</strong> — This is anti-cheat protection. Avoid editing the database or changing the system clock; recover by completing the required reset flow from the app.</li>
+          <li><strong>Integrity warnings from clock drift.</strong> — The app verifies the real time against an external source. If your clock drifts, synchronize it.</li>
+          <li><strong>I cannot open a second copy of the app.</strong> — Only one instance runs at a time; it focuses the existing window.</li>
+          <li><strong>Deep Work won’t start.</strong> — You must configure and verify an AI model first; a mission cannot be committed without it.</li>
+        </ul>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Support</p>
+        <h2 id="limits">Known Limitations</h2>
+        <ul>
+          <li>The managed installation requires administrator privileges.</li>
+          <li>Force-installation depends on Chrome management policies.</li>
+          <li>Browser-specific behavior may differ outside supported Chrome configurations.</li>
+          <li>AI verification requires a configured AI provider.</li>
+          <li>Local evidence captures consume disk space.</li>
+        </ul>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Support</p>
+        <h2 id="suggestions">Suggestions</h2>
+        <p>Ideas for new missions, modes, skins, sounds or features are welcome. Route your suggestions through the project’s GitHub issues so they can be triaged and prioritized with the rest of the roadmap.</p>
+      </div>
+
+      <div class="doc-block">
+        <p class="doc-overline">Support</p>
+        <h2 id="contact">Contact</h2>
+        <p>For support, bug reports or product feedback:</p><ul><li><strong>Email:</strong> <span class="doc-code">sebastiangarciamamani0902@gmail.com</span></li></ul><p>When reporting a problem, include:</p><ul><li>Windows version</li><li>Chrome version</li><li>Imperium OS version</li><li>Description of the problem</li><li>Steps to reproduce</li></ul>
+      </div>
+
+      <!-- ============ PRIVACY ============ -->
+      <div class="doc-block">
+        <p class="doc-overline">Privacy</p>
+        <h2 id="privacy">Privacy &amp; Data</h2>
+        <p>Imperium OS is designed with a local-first privacy model. Your focus history and personal data stay on your device. This section is kept in sync with the published Privacy Policy.</p>
+        <ul>
+          <li><strong>Local storage:</strong> missions, grades, credits, XP, achievements, evidence and browsing activity are stored in local SQLite databases under <span class="doc-code">%LOCALAPPDATA%\Imperium OS</span>. Nothing is uploaded to a production server.</li>
+          <li><strong>Evidence captures:</strong> periodic screenshots and final proof are kept locally and can be deleted with the Weekly/Monthly cleanup. An immutable local ledger records your activity.</li>
+          <li><strong>AI analysis:</strong> when an AI model is configured and enabled, productivity scoring is performed via the model provider API (for example Gemini). Imperium OS never hardcodes or stores your API keys unencrypted for third-party use.</li>
+          <li><strong>Telemetry:</strong> internal status and a local telemetry service run on your machine for self-monitoring; the sleep guardian also checks the current time over the network to detect clock tampering.</li>
+          <li><strong>Your control:</strong> uninstall the Core application to delete its local profile, and run the extension uninstall script to remove browser policies and the hosts-file block.</li>
+        </ul>
+        <p>Read the full <a class="doc-a" href="https://sebastiangarciamamani0902-cmyk.github.io/imperium-os-privacy/privacy-policy.html" target="_blank" rel="noreferrer">Privacy Policy</a> for complete details.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell mono"><span>IMPERIUM OS © 2026</span><span class="footer-links"><a href="privacy.html">PRIVACY</a><a href="docs.html">DOCS</a></span></footer>
+
+
+
+  <script>
+    function copyUninst() {
+      var code = document.getElementById('uninstCode');
+      var btn = document.getElementById('uninstLabel');
+      if (!code || !btn) return;
+      function done() { btn.textContent = "COPIED"; var ic=document.getElementById("uninstIcon"); if(ic){ ic.innerHTML="<path d='M9 16.17 4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/>"; } }
+      var s = code.textContent;
+      function fb(t){ var x=document.createElement('textarea'); x.value=t; document.body.appendChild(x); x.select(); try{document.execCommand('copy');}catch(e){} document.body.removeChild(x); }
+      if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(s).then(done, function(){ fb(s); done(); }); }
+      else { fb(s); done(); }
+      setTimeout(function(){ btn.textContent = 'COPY SCRIPT'; }, 2000);
+    }
+  </script>
+</body>
+</html>
