@@ -332,6 +332,22 @@ if (Test-Path $coreBackup) {
 Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "ImperiumSentinel" -ErrorAction SilentlyContinue
 Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "ImperiumMonitor" -ErrorAction SilentlyContinue
 
+Write-Ok "Closing Chrome to apply the policy removal..."
+$chromeExe = $null
+$chromePaths = @(
+    "C:\Program Files\Google\Chrome\Application\chrome.exe",
+    "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+    (Join-Path $env:LOCALAPPDATA "Google\Chrome\Application\chrome.exe")
+)
+foreach ($p in $chromePaths) { if (Test-Path $p) { $chromeExe = $p; break } }
+if ($chromeExe) {
+    try {
+        Get-Process -Name "chrome" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 3
+        Start-Process $chromeExe
+    } catch {}
+}
+
 Write-Host ""
 Write-Host "==============================================" -ForegroundColor Yellow
 Write-Host "  ROLLBACK COMPLETE" -ForegroundColor Yellow
