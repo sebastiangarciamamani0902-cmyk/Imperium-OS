@@ -60,7 +60,7 @@
       </section>
 
       <section class="download shell" id="download">
-        <div class="download-panel"><h2>MAKE FOCUS<br><em>INEVITABLE.</em></h2><p translate="no">Imperium OS for Windows.</p><a class="button primary" href="https://github.com/sebastiangarciamamani0902-cmyk/Imperium-OS/releases/download/v32.0.0/ImperiumOS_Setup_32.0.0.exe" download="ImperiumOS_Setup_32.0.0.exe">DOWNLOAD IMPERIUM OS <span>↓</span></a><small class="mono">SETUP v32.0.0 / WINDOWS 10+</small></div>
+        <div class="download-panel"><h2>MAKE FOCUS<br><em>INEVITABLE.</em></h2><p translate="no">Imperium OS for Windows.</p><a class="button primary" href="https://github.com/sebastiangarciamamani0902-cmyk/Imperium-OS/releases/download/v32.0.0/ImperiumOS_Setup_32.0.0.exe" download="ImperiumOS_Setup_32.0.0.exe">DOWNLOAD FOR WINDOWS <span>↓</span></a><small class="mono">SETUP v32.0.0 / WINDOWS 10+</small></div>
       </section>
     </div>
 
@@ -98,19 +98,22 @@
     function setTab(name, scroll) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
-      try { localStorage.setItem('imperiumTab', name); } catch (e) {}
-      if (scroll) window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
     }
-    // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => setTab(btn.dataset.tab, true));
     });
-    // Restore last tab on load
-    try { var saved = localStorage.getItem('imperiumTab'); if (saved) setTab(saved, false); } catch (e) {}
+    // Always open the DESKTOP tab; never restore a previous tab.
+    setTab('desktop', false);
+    document.querySelectorAll('a[href="#top"]').forEach(a => {
+      a.addEventListener('click', function(e) {
+        e.preventDefault();
+        window.scrollTo(0, 0);
+      });
+    });
     // Re-sync on back/forward navigation (bfcache)
     window.addEventListener('pageshow', function(e) {
-      try { var s = localStorage.getItem('imperiumTab'); if (s) setTab(s, false); } catch (err) {}
-      // Force-reveal any hidden animated elements after returning
+      setTab('desktop', false);
       document.querySelectorAll('.section-heading, .vtl-card, .download-panel').forEach(el => el.classList.add('visible'));
     });
     // Intersection observer
