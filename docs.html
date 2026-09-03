@@ -258,7 +258,7 @@
           <button id="uninstBtn" onclick="copyUninst()" style="display:inline-flex;align-items:center;gap:10px;padding:9px 16px;font:700 12px 'JetBrains Mono',monospace;letter-spacing:1.5px;border:1px solid var(--cyan);background:var(--cyan);color:#031016;cursor:pointer;transition:.25s;"><svg id="uninstIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:15px;height:15px;fill:#031016;display:block;"><path d="M16 1H4c-1.1 0-2 .9-2 2v13h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg><span id="uninstLabel">COPY SCRIPT</span></button>
         </div><pre id="uninstCode" style="background:#06121c;border:1px solid var(--line);border-radius:6px;padding:14px 16px;font:12px/1.45 'JetBrains Mono',monospace;color:var(--cyan);overflow:auto;max-height:460px;white-space:pre;user-select:all;">
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "Se requieren permisos de administrador. Elevando..." -ForegroundColor Yellow
+    Write-Host "Administrator permissions required. Elevating..." -ForegroundColor Yellow
     Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
     exit
 }
@@ -268,7 +268,7 @@ $ExtensionID = "ajilohlkmkjipipjagpnokhinhbjfkfb"
 
 Write-Host ""
 Write-Host "==============================================" -ForegroundColor Yellow
-Write-Host "  IMPERIUM OS - DESINSTALAR / ROLLBACK" -ForegroundColor Yellow
+Write-Host "  IMPERIUM OS - UNINSTALL / ROLLBACK" -ForegroundColor Yellow
 Write-Host "==============================================" -ForegroundColor Yellow
 Write-Host ""
 
@@ -276,8 +276,8 @@ $polBase = "HKLM:\SOFTWARE\Policies\Google\Chrome"
 $fcList = Join-Path $polBase "ExtensionInstallForcelist"
 $cur = (Get-ItemProperty $fcList -Name "1" -ErrorAction SilentlyContinue)."1"
 if ($cur -like "$ExtensionID*") {
-    Remove-ItemProperty $fcList -Name "1" -ErrorAction SilentlyContinue
-    Write-Host "  [OK] Quitada ExtensionInstallForcelist[1] (Imperium)" -ForegroundColor Green
+Remove-ItemProperty $fcList -Name "1" -ErrorAction SilentlyContinue
+    Write-Host "  [OK] Removed ExtensionInstallForcelist[1] (Imperium)" -ForegroundColor Green
 }
 
 $curSet = (Get-ItemProperty $polBase -Name "ExtensionSettings" -ErrorAction SilentlyContinue).ExtensionSettings
@@ -291,9 +291,9 @@ if ($curSet) {
             } else {
                 Remove-ItemProperty $polBase -Name "ExtensionSettings" -ErrorAction SilentlyContinue
             }
-            Write-Host "  [OK] Quitada ExtensionSettings de Imperium" -ForegroundColor Green
+Write-Host "  [OK] Removed Imperium from ExtensionSettings" -ForegroundColor Green
         }
-    } catch { Write-Host "  [--] ExtensionSettings no modificada (no parseable)" -ForegroundColor DarkGray }
+    } catch { Write-Host "  [--] ExtensionSettings not modified (unparseable)" -ForegroundColor DarkGray }
 }
 
 $hardeningKeys = @(
@@ -309,40 +309,39 @@ foreach ($base in @($polBase, "HKLM:\SOFTWARE\Policies\Microsoft\Edge")) {
     foreach ($k in $hardeningKeys) {
         Remove-ItemProperty $base -Name $k -ErrorAction SilentlyContinue
     }
-    Write-Host "  [OK] Quitado hardening incognito/invitado/perfiles: $base" -ForegroundColor Green
+Write-Host "  [OK] Removed incognito/guest/profile hardening: $base" -ForegroundColor Green
 }
 
 @("ImperiumOS-HealthCheck","ImperiumOS-Reapply-Boot","ImperiumOS-Reapply-Login","ImperiumOS-ExtensionGuard","ImperiumOS-UpdateServer") | ForEach-Object {
-    # borrado via schtasks (inmune a visibilidad restringida de tareas SYSTEM)
     schtasks /delete /tn $_ /f 2>$null | Out-Null
     Unregister-ScheduledTask -TaskName $_ -Confirm:$false -ErrorAction SilentlyContinue
-    Write-Host "  [OK] Tarea eliminada: $_" -ForegroundColor Green
+    Write-Host "  [OK] Task removed: $_" -ForegroundColor Green
 }
 
 $BaseDir = Join-Path $env:LOCALAPPDATA "ImperiumOS"
 if (Test-Path $BaseDir) {
     Remove-Item $BaseDir -Recurse -Force
-    Write-Host "  [OK] Carpeta base eliminada: $BaseDir" -ForegroundColor Green
+    Write-Host "  [OK] Base folder removed: $BaseDir" -ForegroundColor Green
 }
 $coreDir = Join-Path $env:LOCALAPPDATA "Imperium OS"
 $coreBackup = Join-Path $coreDir "ext_backup.json"
 if (Test-Path $coreBackup) {
     Remove-Item $coreBackup -Force
-    Write-Host "  [OK] Backup de extension eliminado: $coreBackup" -ForegroundColor Green
+    Write-Host "  [OK] Extension backup removed: $coreBackup" -ForegroundColor Green
 }
 Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "ImperiumSentinel" -ErrorAction SilentlyContinue
 Remove-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "ImperiumMonitor" -ErrorAction SilentlyContinue
 
 Write-Host ""
 Write-Host "==============================================" -ForegroundColor Yellow
-Write-Host "  ROLLBACK COMPLETO" -ForegroundColor Yellow
+Write-Host "  ROLLBACK COMPLETE" -ForegroundColor Yellow
 Write-Host "==============================================" -ForegroundColor Yellow
 Write-Host ""
-Write-Host "  NOTA: la extension ya instalada en Chrome no se elimina desde aqui." -ForegroundColor DarkGray
-Write-Host "  Con la politica retirada, Chrome dejara de tratarla como administrada" -ForegroundColor DarkGray
-Write-Host "  y podras desinstalarla desde chrome://extensions si lo deseas." -ForegroundColor DarkGray
+Write-Host "  NOTE: the extension already installed in Chrome is not removed here." -ForegroundColor DarkGray
+Write-Host "  With the policy removed, Chrome will stop treating it as managed" -ForegroundColor DarkGray
+Write-Host "  and you can uninstall it from chrome://extensions if you wish." -ForegroundColor DarkGray
 Write-Host ""
-Read-Host "Presiona ENTER para cerrar"
+Read-Host "Press ENTER to close"
 </pre>
 
 
