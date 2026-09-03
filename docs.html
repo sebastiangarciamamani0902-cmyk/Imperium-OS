@@ -78,7 +78,7 @@
   <div class="grid"></div>
 
   <header class="nav shell">
-    <a class="brand" href="index.html" aria-label="Imperium OS home">
+    <a class="brand" href="index.html" aria-label="Imperium OS home" translate="no">
       <img class="brand-mark" src="imperium-lightning.jpeg" alt="Imperium OS lightning mark"><span>Imperium</span><b>OS</b>
     </a>
     <div class="tab-bar">
@@ -121,7 +121,7 @@
 
     <section class="docs-main">
       <div class="docs-hero">
-        <h1><span>Imperium OS</span> <b>Documentation</b></h1>
+        <h1 translate="no"><span>Imperium OS</span> <b>Documentation</b></h1>
         <p>Guides for the Imperium OS desktop application and the browser extension. Learn how to install, use, and manage both, and how your data is handled.</p>
       </div>
 
@@ -256,7 +256,7 @@
         <p style="max-width:720px;color:var(--text);font-size:15px;line-height:1.5;margin:0 0 10px;">Copy the script below, save it as <span class="doc-code">imperium_uninstall.ps1</span>, then run it as Administrator in PowerShell to roll back what Imperium OS installed on this device.</p>
         <div style="display:flex;justify-content:flex-start;margin-bottom:8px;max-width:720px;">
           <button id="uninstBtn" onclick="copyUninst()" style="display:inline-flex;align-items:center;gap:10px;padding:9px 16px;font:700 12px 'JetBrains Mono',monospace;letter-spacing:1.5px;border:1px solid var(--cyan);background:var(--cyan);color:#031016;cursor:pointer;transition:.25s;"><svg id="uninstIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" style="width:15px;height:15px;fill:#031016;display:block;"><path d="M16 1H4c-1.1 0-2 .9-2 2v13h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg><span id="uninstLabel">COPY SCRIPT</span></button>
-        </div><pre id="uninstCode" style="background:#06121c;border:1px solid var(--line);border-radius:6px;padding:14px 16px;font:12px/1.45 'JetBrains Mono',monospace;color:var(--cyan);overflow:auto;max-height:460px;white-space:pre;user-select:all;">
+        </div><pre id="uninstCode" translate="no" style="background:#06121c;border:1px solid var(--line);border-radius:6px;padding:14px 16px;font:12px/1.45 'JetBrains Mono',monospace;color:var(--cyan);overflow:auto;max-height:460px;white-space:pre;user-select:all;">
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Host "Administrator permissions required. Elevating..." -ForegroundColor Yellow
     Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
@@ -402,7 +402,7 @@ Read-Host "Press ENTER to close"
     </section>
   </main>
 
-  <footer class="shell mono"><span>IMPERIUM OS © 2026</span><span class="footer-links"><a href="privacy.html">PRIVACY</a><a href="docs.html">DOCS</a></span></footer>
+  <footer class="shell mono" translate="no"><span>IMPERIUM OS © 2026</span><span class="footer-links"><a href="privacy.html">PRIVACY</a><a href="docs.html">DOCS</a></span></footer>
 
   <script>
     function copyUninst() {
@@ -416,6 +416,27 @@ Read-Host "Press ENTER to close"
       else { fb(s); done(); }
       setTimeout(function(){ btn.textContent = 'COPY SCRIPT'; }, 2000);
     }
+    // Protect the Imperium OS brand from translators
+    function protectBrand(root) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) {
+        const n = walker.currentNode;
+        const t = n.nodeValue;
+        if (!t) continue;
+        if (/Imperium[ ­\u00a0]*OS|Imperium|(?<![\w])OS(?![\w])/i.test(t) && !n.parentElement.hasAttribute('translate')) nodes.push(n);
+      }
+      nodes.forEach(n => {
+        const parent = n.parentElement;
+        const html = n.nodeValue.replace(/(Imperium\s*OS|Imperium|(?<![\w])OS(?![\w]))/gi, '<span class="brand-p" translate="no">$1</span>');
+        const tmp = document.createElement('span');
+        tmp.innerHTML = html + '<span class="brand-p" translate="no"></span>';
+        [...tmp.childNodes].forEach(c => parent.insertBefore(c, n));
+        parent.removeChild(n);
+      });
+    }
+    protectBrand(document.body);
+    if (window.MutationObserver) new MutationObserver(() => protectBrand(document.body)).observe(document.body, { childList: true, subtree: true });
   </script>
 </body>
 </html>

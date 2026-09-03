@@ -37,7 +37,7 @@
   <div class="grid"></div>
 
   <header class="nav shell">
-    <a class="brand" href="index.html" aria-label="Imperium OS home">
+    <a class="brand" href="index.html" aria-label="Imperium OS home" translate="no">
       <img class="brand-mark" src="imperium-lightning.jpeg" alt="Imperium OS lightning mark"><span>Imperium</span><b>OS</b>
     </a>
     <div class="tab-bar">
@@ -50,7 +50,7 @@
   <main class="docs-shell shell" style="display:block;">
     <div class="docs-main">
       <div class="docs-hero">
-        <h1><span>Imperium OS</span> <b>Privacy Policy</b></h1>
+        <h1><span translate="no">Imperium OS</span> <b>Privacy Policy</b></h1>
         <p class="updated"><strong>Last updated:</strong> August 12, 2026</p>
       </div>
 
@@ -179,5 +179,28 @@
       </div>
     </div>
   </main>
+  <script>
+    // Protect the Imperium OS brand from translators
+    function protectBrand(root) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) {
+        const n = walker.currentNode;
+        const t = n.nodeValue;
+        if (!t) continue;
+        if (/Imperium[ ­\u00a0]*OS|Imperium|(?<![\w])OS(?![\w])/i.test(t) && !n.parentElement.hasAttribute('translate')) nodes.push(n);
+      }
+      nodes.forEach(n => {
+        const parent = n.parentElement;
+        const html = n.nodeValue.replace(/(Imperium\s*OS|Imperium|(?<![\w])OS(?![\w]))/gi, '<span class="brand-p" translate="no">$1</span>');
+        const tmp = document.createElement('span');
+        tmp.innerHTML = html + '<span class="brand-p" translate="no"></span>';
+        [...tmp.childNodes].forEach(c => parent.insertBefore(c, n));
+        parent.removeChild(n);
+      });
+    }
+    protectBrand(document.body);
+    if (window.MutationObserver) new MutationObserver(() => protectBrand(document.body)).observe(document.body, { childList: true, subtree: true });
+  </script>
 </body>
 </html>
