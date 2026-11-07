@@ -278,27 +278,37 @@
         </div>
         <div class="toast" id="uninstallToast">COPIED &#10004;</div>
         <pre id="uninstallCode" translate="no"># ============================================================
-#  IMPERIUM OS — DESINSTALACIÓN TOTAL (copiar/pegar en PowerShell como Administrador)
-#  Elimina la extensión de Chrome/Edge (y cualquier resto de Imperium OS) y
-#  garantiza que NO vuelva a instalarse: se borran también las tareas
-#  programadas y carpetas que la re-instalaban cada 30 minutos.
-#  Deja el navegador como estaba antes (sin modo forzado, sin widgets,
-#  sin Store bloqueado, etc.).
+#  IMPERIUM OS - FULL UNINSTALL (copy/paste into PowerShell as Administrator)
+#  Removes the Chrome/Edge extension (and every Imperium OS leftover) and
+#  guarantees it will NOT be installed again: scheduled tasks and folders
+#  that re-installed it every 30 minutes are deleted too.
+#  Restores the browser to normal (no forced mode, no widgets,
+#  no blocked Store, etc.).
+#
+#  Diagnostics (optional, does not affect normal use):
+#    $env:IMPERIUM_UNINSTALL_DRYRUN='1'  → solo informa, no cambia nada
+#    $env:IMPERIUM_UNINSTALL_SANDBOX='1' → opera sobre rutas/registro temporales
 # ============================================================
 
 $ErrorActionPreference = 'SilentlyContinue'
 
-# --- IDs (legacy del instalador público + actual) ---
+# --- IDs (legacy from the public installer + current) ---
 $Ids = @(
     'ajilohlkmkjipipjagpnokhinhbjfkfb',
     'ghojejjiihmeebohfnafjjlkfhampbog'
 )
 
-# --- Auto-elevación a Administrador ---
-if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
-    Write-Host "Administrator permissions required. Elevating..." -ForegroundColor Yellow
-    Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"&amp; { `$c = Get-Content -Raw -LiteralPath '$PSCommandPath'; Invoke-Expression `$c }`""
-    exit
+# --- Diagnostic modes ---
+$Verbose_ = $false; $DryRun  = ($env:IMPERIUM_UNINSTALL_DRYRUN  -eq '1')
+$Sandbox = ($env:IMPERIUM_UNINSTALL_SANDBOX -eq '1')
+
+# --- Auto-elevation to Administrator ---
+if (-not $DryRun -and -not $Sandbox) {
+    if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        Write-Host "Administrator permissions required. Elevating..." -ForegroundColor Yellow
+        Start-Process powershell -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -Command `"&amp; { `$c = Get-Content -Raw -LiteralPath '$PSCommandPath'; Invoke-Expression `$c }`""
+        exit
+    }
 }
 
 function Say([string]$m) { Write-Host $m -ForegroundColor Cyan }
@@ -306,10 +316,51 @@ function Ok([string]$m)  { Write-Host "  [OK]   $m" -ForegroundColor Green }
 function Warn([string]$m){ Write-Host "  [WARN] $m" -ForegroundColor Yellow }
 function Err([string]$m) { Write-Host "  [ERR]  $m" -ForegroundColor Red }
 
+# --- paths (sandbox -&gt; temporary) ---
+$LocalRoot  = if ($Sandbox) { Join-Path $env:TEMP 'imperium_uninstall_sandbox\local' } else { $env:LOCALAPPDATA }
+$ProgramRoot= if ($Sandbox) { Join-Path $env:TEMP 'imperium_uninstall_sandbox\program' } else { $env:ProgramData }
+$HostsPath  = if ($Sandbox) { Join-Path $env:TEMP 'imperium_uninstall_sandbox\hosts' } else { Join-Path $env:WINDIR 'System32\drivers\etc\hosts' }
+if ($Sandbox) {
+    New-Item -ItemType Directory -Force -Path (Join-Path $env:TEMP 'imperium_uninstall_sandbox') | Out-Null
+}
+
+# --- helpers with dry-run/sandbox support ---
+function Remove-Path([string]$Path, [string]$What) {
+    if (-not (Test-Path -LiteralPath $Path)) { return }
+    if ($DryRun) { Write-Host "  [DRY] would remove: $Path ($What)" -ForegroundColor DarkGray; return }
+    Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue
+    Ok "removed: $Path"
+}
+function Remove-Task([string]$Name) {
+    if (-not (Get-ScheduledTask -TaskName $Name -ErrorAction SilentlyContinue)) { return }
+    if ($DryRun) { Write-Host "  [DRY] would unregister task: $Name" -ForegroundColor DarkGray; return }
+    Unregister-ScheduledTask -TaskName $Name -Confirm:$false -ErrorAction SilentlyContinue
+    Ok "task removed: $Name"
+}
+function Stop-Listener([int]$Port) {
+    try {
+        Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | ForEach-Object {
+            $proc = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
+            if ($proc -and $proc.ProcessName -match 'powershell|pwsh') {
+                if ($DryRun) { Write-Host "  [DRY] would stop pid $($_.OwningProcess) on port $Port" -ForegroundColor DarkGray; return }
+                Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
+                Ok "stopped local server (pid $($_.OwningProcess))"
+            }
+        }
+    } catch { }
+}
+function Remove-UrlAcl([string]$Url) {
+    if ($DryRun) { Write-Host "  [DRY] would delete urlacl: $Url" -ForegroundColor DarkGray; return }
+    netsh http delete urlacl url=$Url | Out-Null
+    Ok 'urlacl removed'
+}
+
 Write-Host ""
 Write-Host "==============================================" -ForegroundColor Yellow
 Write-Host "  IMPERIUM OS - FULL UNINSTALL" -ForegroundColor Yellow
 Write-Host "==============================================" -ForegroundColor Yellow
+if ($DryRun)  { Write-Host "  (DRY-RUN: no se modifica nada)" -ForegroundColor DarkGray }
+if ($Sandbox) { Write-Host "  (SANDBOX: se opera sobre rutas/registro temporales)" -ForegroundColor DarkGray }
 Write-Host ""
 
 # ---------------------------------------------------------------
@@ -322,13 +373,7 @@ $TaskNames = @(
     'ImperiumGuard','ImperiumMonitor','ImperiumSentinel',
     'ImperiumOS_Boot','ImperiumOS_Startup','ImperiumOS_Watchdog','ImperiumOS-Guard'
 )
-foreach ($t in $TaskNames) {
-    if (Get-ScheduledTask -TaskName $t -ErrorAction SilentlyContinue) {
-        Unregister-ScheduledTask -TaskName $t -Confirm:$false -ErrorAction SilentlyContinue
-        Ok "task removed: $t"
-    }
-}
-# Sweep: any task whose action points to an Imperium script
+foreach ($t in $TaskNames) { Remove-Task $t }
 try {
     Get-ScheduledTask -ErrorAction SilentlyContinue | ForEach-Object {
         $tn = $_.TaskName
@@ -337,8 +382,8 @@ try {
             if (("$($a.Execute) $($a.Arguments)") -match 'Imperium') { $hit = $true }
         }
         if ($hit) {
-            Unregister-ScheduledTask -TaskName $tn -Confirm:$false -ErrorAction SilentlyContinue
-            Ok "task removed (points to Imperium): $tn"
+            if ($DryRun) { Write-Host "  [DRY] would unregister task (points to Imperium): $tn" -ForegroundColor DarkGray }
+            else { Unregister-ScheduledTask -TaskName $tn -Confirm:$false -ErrorAction SilentlyContinue; Ok "task removed (points to Imperium): $tn" }
         }
     }
 } catch {}
@@ -348,32 +393,16 @@ Ok 'task sweep done'
 # 2) Folders (guard + payload + recovery copy + local update server)
 # ---------------------------------------------------------------
 Say "[2/8] Removing folders..."
-foreach ($d in @(
-    (Join-Path $env:LOCALAPPDATA 'ImperiumOS'),
-    (Join-Path $env:LOCALAPPDATA 'Imperium OS\ext_backup.json'),
-    (Join-Path $env:ProgramData 'ImperiumOS')
-)) {
-    if (Test-Path -LiteralPath $d) {
-        Remove-Item -LiteralPath $d -Recurse -Force -ErrorAction SilentlyContinue
-        Ok "removed: $d"
-    }
-}
+Remove-Path (Join-Path $LocalRoot 'ImperiumOS')                       'guard local + REPARAR'
+Remove-Path (Join-Path $LocalRoot 'Imperium OS\ext_backup.json')      'backup del Core'
+Remove-Path (Join-Path $ProgramRoot 'ImperiumOS')                     'payload + Recovery + update server'
 
 # ---------------------------------------------------------------
 # 3) Local update server (port 8765) + URL ACL
 # ---------------------------------------------------------------
 Say "[3/8] Stopping local update server..."
-try {
-    Get-NetTCPConnection -LocalPort 8765 -State Listen -ErrorAction SilentlyContinue | ForEach-Object {
-        $p = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
-        if ($p -and $p.ProcessName -match 'powershell|pwsh') {
-            Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue
-            Ok "stopped update server process (pid $($_.OwningProcess))"
-        }
-    }
-} catch {}
-netsh http delete urlacl url='http://127.0.0.1:8765/' | Out-Null
-Ok 'urlacl removed'
+Stop-Listener 8765
+Remove-UrlAcl 'http://127.0.0.1:8765/'
 
 # ---------------------------------------------------------------
 # 4) Registry ACLs (reinforce.ps1 set "Deny delete" on policy keys)
@@ -383,23 +412,78 @@ function Remove-DenyAcl([string]$Path) {
     if (-not (Test-Path -LiteralPath $Path)) { return }
     try {
         $acl = Get-Acl -LiteralPath $Path
-        $rules = @($acl.Access | Where-Object {
+        $denies = @($acl.Access | Where-Object {
             $_.AccessControlType -eq 'Deny' -and
             $_.IdentityReference.Value -in @('BUILTIN\Administrators','BUILTIN\Administradores','NT AUTHORITY\SYSTEM')
         })
-        foreach ($r in $rules) { [void]$acl.RemoveAccessRuleSpecific($r) }
+# If there is NO "Deny delete" the ACL is left alone: rewriting it needlessly can
+# leave the key without write permission, so later deletions fail
+# ("Cannot write to the registry key") -&gt; the policies survive
+# and the extension installs itself again.
+        if ($denies.Count -eq 0) { return }
+        foreach ($r in $denies) { [void]$acl.RemoveAccessRuleSpecific($r) }
+# Ensure write access for SYSTEM, Administrators and the current user
+        $sids = @('S-1-5-32-544','S-1-5-18')
+        try { $sids += ([Security.Principal.WindowsIdentity]::GetCurrent()).User.Value } catch { }
+        foreach ($sid in ($sids | Select-Object -Unique)) {
+            try {
+                $id = New-Object System.Security.Principal.SecurityIdentifier($sid)
+                $rule = New-Object System.Security.AccessControl.RegistryAccessRule(
+                    $id, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
+                $acl.AddAccessRule($rule)
+            } catch { }
+        }
         $acl.SetAccessRuleProtection($false, $true)
+        if ($DryRun) { Write-Host "  [DRY] would normalize ACL: $Path" -ForegroundColor DarkGray; return }
         Set-Acl -LiteralPath $Path -AclObject $acl
     } catch { }
 }
-$PolicyRoots = @(
-    'HKLM:\SOFTWARE\Policies\Google\Chrome','HKCU:\SOFTWARE\Policies\Google\Chrome',
-    'HKLM:\SOFTWARE\Policies\Microsoft\Edge','HKCU:\SOFTWARE\Policies\Microsoft\Edge',
-    'HKLM:\SOFTWARE\Policies\BraveSoftware\Brave','HKCU:\SOFTWARE\Policies\BraveSoftware\Brave',
-    'HKLM:\SOFTWARE\Policies\Opera Software\Opera','HKLM:\SOFTWARE\Policies\Opera Software\Opera GX',
-    'HKLM:\SOFTWARE\Policies\Vivaldi','HKLM:\SOFTWARE\Policies\Chromium',
-    'HKLM:\SOFTWARE\Policies\Yandex\Browser','HKLM:\SOFTWARE\Policies\Mozilla\Firefox'
-)
+# Ensures the key IS writable.
+# IMPORTANT: Get-Item returns the key READ-ONLY -&gt; SetValue/DeleteValue
+# always fail with "Cannot write to the registry key" (so the
+# the uninstaller NEVER deleted the policies and the extension came back).
+# That is why the PowerShell PROVIDER is used (Set-ItemProperty/Remove-ItemProperty),
+# which opens the key with write access, and reg.exe as plan B.
+function Ensure-Writable([string]$Path) {
+    if (-not (Test-Path -LiteralPath $Path)) { return $false }
+    try {
+        New-ItemProperty -Path $Path -Name '__imperium_write_test' -Value '1' -PropertyType String -Force -ErrorAction Stop | Out-Null
+        Remove-ItemProperty -Path $Path -Name '__imperium_write_test' -ErrorAction SilentlyContinue
+        return $true
+    } catch {
+# Restrictive ACL (reinforce.ps1 "Deny delete"): normalize and retry.
+        try {
+            $acl = Get-Acl -LiteralPath $Path
+            $sids = @('S-1-5-32-544','S-1-5-18')
+            try { $sids += ([Security.Principal.WindowsIdentity]::GetCurrent()).User.Value } catch { }
+            foreach ($sid in ($sids | Select-Object -Unique)) {
+                try {
+                    $id = New-Object System.Security.Principal.SecurityIdentifier($sid)
+                    $rule = New-Object System.Security.AccessControl.RegistryAccessRule(
+                        $id, 'FullControl', 'ContainerInherit,ObjectInherit', 'None', 'Allow')
+                    $acl.AddAccessRule($rule)
+                } catch { }
+            }
+            $acl.SetAccessRuleProtection($false, $true)
+            Set-Acl -LiteralPath $Path -AclObject $acl
+            New-ItemProperty -Path $Path -Name '__imperium_write_test' -Value '1' -PropertyType String -Force -ErrorAction Stop | Out-Null
+            Remove-ItemProperty -Path $Path -Name '__imperium_write_test' -ErrorAction SilentlyContinue
+            return $true
+        } catch { return $false }
+    }
+}
+$PolicyRoots = if ($Sandbox) {
+    @('HKCU:\Software\ImperiumOS_Sandbox\Policies\Google\Chrome','HKCU:\Software\ImperiumOS_Sandbox\Policies\Microsoft\Edge')
+} else {
+    @(
+        'HKLM:\SOFTWARE\Policies\Google\Chrome','HKCU:\SOFTWARE\Policies\Google\Chrome',
+        'HKLM:\SOFTWARE\Policies\Microsoft\Edge','HKCU:\SOFTWARE\Policies\Microsoft\Edge',
+        'HKLM:\SOFTWARE\Policies\BraveSoftware\Brave','HKCU:\SOFTWARE\Policies\BraveSoftware\Brave',
+        'HKLM:\SOFTWARE\Policies\Opera Software\Opera','HKLM:\SOFTWARE\Policies\Opera Software\Opera GX',
+        'HKLM:\SOFTWARE\Policies\Vivaldi','HKLM:\SOFTWARE\Policies\Chromium',
+        'HKLM:\SOFTWARE\Policies\Yandex\Browser','HKLM:\SOFTWARE\Policies\Mozilla\Firefox'
+    )
+}
 foreach ($root in $PolicyRoots) {
     Remove-DenyAcl $root
     foreach ($sub in @('ExtensionInstallForcelist','ExtensionInstallAllowlist','ExtensionInstallBlocklist')) {
@@ -414,10 +498,11 @@ Ok 'policy ACLs normalized'
 Say "[5/8] Removing extension policies and restoring browser defaults..."
 foreach ($root in $PolicyRoots) {
     if (-not (Test-Path -LiteralPath $root)) { continue }
-    $key = Get-Item -LiteralPath $root
+    if (-not $DryRun) { Warn "policy key is not writable: $root" }
 
-    # 5a) ExtensionSettings: drop only our ids
-    $raw = [string]$key.GetValue('ExtensionSettings')
+    # 5a) ExtensionSettings: drop only our ids (PROVEEDOR: Set-ItemProperty/Remove-ItemProperty)
+    $cur = Get-ItemProperty -Path $root -Name 'ExtensionSettings' -ErrorAction SilentlyContinue
+    $raw = if ($cur) { [string]$cur.ExtensionSettings } else { '' }
     if ($raw) {
         try {
             $obj = $raw | ConvertFrom-Json
@@ -426,14 +511,15 @@ foreach ($root in $PolicyRoots) {
                 if ($obj.PSObject.Properties.Name -contains $id) { $obj.PSObject.Properties.Remove($id); $changed = $true }
             }
             if ($changed) {
-                if ($obj.PSObject.Properties.Count -gt 0) {
-                    $key.SetValue('ExtensionSettings', ($obj | ConvertTo-Json -Compress), [Microsoft.Win32.RegistryValueKind]::String)
+                if ($DryRun) { Write-Host "  [DRY] would clean ExtensionSettings at $root" -ForegroundColor DarkGray }
+                elseif ($obj.PSObject.Properties.Count -gt 0) {
+                    Set-ItemProperty -Path $root -Name 'ExtensionSettings' -Value ($obj | ConvertTo-Json -Compress)
                 } else {
-                    $key.DeleteValue('ExtensionSettings', $false)
+                    Remove-ItemProperty -Path $root -Name 'ExtensionSettings' -ErrorAction SilentlyContinue
                 }
             }
         } catch {
-            try { $key.DeleteValue('ExtensionSettings', $false) } catch { }
+            if (-not $DryRun) { Remove-ItemProperty -Path $root -Name 'ExtensionSettings' -ErrorAction SilentlyContinue }
         }
     }
 
@@ -441,54 +527,72 @@ foreach ($root in $PolicyRoots) {
     foreach ($listName in @('ExtensionInstallForcelist','ExtensionInstallAllowlist')) {
         $listPath = Join-Path $root $listName
         if (-not (Test-Path -LiteralPath $listPath)) { continue }
-        $lk = Get-Item -LiteralPath $listPath
-        foreach ($name in @($lk.GetValueNames())) {
-            $v = [string]$lk.GetValue($name)
+        [void](Ensure-Writable $listPath)
+        $names = @((Get-Item -Path $listPath).GetValueNames())
+        foreach ($name in $names) {
+            $v = [string](Get-ItemProperty -Path $listPath -Name $name -ErrorAction SilentlyContinue).$name
             foreach ($id in $Ids) {
-                if ($v -like "$id;*") { $lk.DeleteValue($name, $false) }
+                if ($v -eq $id -or $v -like "$id;*") {
+                    if ($DryRun) { Write-Host "  [DRY] would drop $listName\$name at $root" -ForegroundColor DarkGray }
+                    else { Remove-ItemProperty -Path $listPath -Name $name -ErrorAction SilentlyContinue }
+                }
             }
         }
-        if (@($lk.GetValueNames()).Count -eq 0) {
+        if (@((Get-Item -Path $listPath).GetValueNames()).Count -eq 0 -and -not $DryRun) {
             Remove-Item -LiteralPath $listPath -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
     # 5c) Blocklist key (installer removed it; make sure it is gone)
-    Remove-Item -LiteralPath (Join-Path $root 'ExtensionInstallBlocklist') -Recurse -Force -ErrorAction SilentlyContinue
+    if (Test-Path -LiteralPath (Join-Path $root 'ExtensionInstallBlocklist')) {
+        if ($DryRun) { Write-Host "  [DRY] would remove ExtensionInstallBlocklist at $root" -ForegroundColor DarkGray }
+        else { Remove-Item -LiteralPath (Join-Path $root 'ExtensionInstallBlocklist') -Recurse -Force -ErrorAction SilentlyContinue }
+    }
 
     # 5d) Restore normal browser behavior (focus hardening removed)
     foreach ($name in @(
         'IncognitoModeAvailability','InPrivateModeAvailability','BrowserGuestModeEnabled',
         'BrowserAddPersonEnabled','BrowserAddProfileEnabled','BrowserProfilePickerAvailability',
         'DisablePrivateBrowsing','PrivateBrowsing','PreventEdgeDownloadEnabled'
-    )) { try { $key.DeleteValue($name, $false) } catch { } }
+    )) {
+        if ($DryRun) { Write-Host "  [DRY] would restore default: $root\$name" -ForegroundColor DarkGray }
+        else { Remove-ItemProperty -Path $root -Name $name -ErrorAction SilentlyContinue }
+    }
 }
 
 # Windows-level hardening installed by the setup (restore defaults)
-foreach ($p in @(
+$WinHardening = @(
     @{ Path = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System'; Names = @('DisableFastUserSwitching') },
     @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\Explorer'; Names = @('HideFastUserSwitching') },
     @{ Path = 'HKLM:\SOFTWARE\Policies\Dsh'; Names = @('AllowNewsAndInterests') },
     @{ Path = 'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced'; Names = @('EnableWidgets') },
     @{ Path = 'HKLM:\SOFTWARE\Policies\WindowsStore'; Names = @('RemoveWindowsStoreCapability') }
-)) {
+)
+foreach ($p in $WinHardening) {
     if (-not (Test-Path -LiteralPath $p.Path)) { continue }
-    try { $k = Get-Item -LiteralPath $p.Path } catch { continue }
-    foreach ($n in $p.Names) { try { $k.DeleteValue($n, $false) } catch { } }
+    if ($DryRun) { Write-Host "  [DRY] would restore default: $($p.Path) [$($p.Names -join ', ')]" -ForegroundColor DarkGray; continue }
+    foreach ($n in $p.Names) { Remove-ItemProperty -Path $p.Path -Name $n -ErrorAction SilentlyContinue }
 }
-try { (Get-Item -LiteralPath 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications').DeleteValue('ToastEnabled', $false) } catch { }
+if (-not $DryRun) {
+    Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications' -Name 'ToastEnabled' -ErrorAction SilentlyContinue
+}
 Ok 'extension policies removed; browser defaults restored'
 
 # ---------------------------------------------------------------
 # 6) External extension registration (both ids, every browser)
 # ---------------------------------------------------------------
 Say "[6/8] Removing external extension registration..."
-foreach ($root in @(
-    'HKLM:\SOFTWARE\Google\Chrome\Extensions','HKCU:\SOFTWARE\Google\Chrome\Extensions',
-    'HKLM:\SOFTWARE\Microsoft\Edge\Extensions','HKCU:\SOFTWARE\Microsoft\Edge\Extensions'
-)) {
+$ExtRoots = if ($Sandbox) {
+    @('HKCU:\Software\ImperiumOS_Sandbox\Extensions\Chrome')
+} else {
+    @(
+        'HKLM:\SOFTWARE\Google\Chrome\Extensions','HKCU:\SOFTWARE\Google\Chrome\Extensions',
+        'HKLM:\SOFTWARE\Microsoft\Edge\Extensions','HKCU:\SOFTWARE\Microsoft\Edge\Extensions'
+    )
+}
+foreach ($root in $ExtRoots) {
     foreach ($id in $Ids) {
         $p = Join-Path $root $id
-        if (Test-Path -LiteralPath $p) { Remove-Item -LiteralPath $p -Recurse -Force -ErrorAction SilentlyContinue; Ok "removed: $p" }
+        if (Test-Path -LiteralPath $p) { Remove-Path $p 'external extension registration' }
     }
 }
 
@@ -496,33 +600,39 @@ foreach ($root in @(
 # 7) Autostart entries + hosts block
 # ---------------------------------------------------------------
 Say "[7/8] Removing autostart entries and hosts block..."
-foreach ($rk in @('HKCU:\Software\Microsoft\Windows\CurrentVersion\Run','HKLM:\Software\Microsoft\Windows\CurrentVersion\Run')) {
+$RunKeys = if ($Sandbox) { @('HKCU:\Software\ImperiumOS_Sandbox\Run') } else {
+    @('HKCU:\Software\Microsoft\Windows\CurrentVersion\Run','HKLM:\Software\Microsoft\Windows\CurrentVersion\Run')
+}
+foreach ($rk in $RunKeys) {
     if (-not (Test-Path -LiteralPath $rk)) { continue }
     try {
-        $k = Get-Item -LiteralPath $rk
-        foreach ($n in @($k.GetValueNames())) {
-            if ((("$($k.GetValue($n))") -match 'Imperium')) { $k.DeleteValue($n, $false); Ok "run key removed: $n" }
+        [void](Ensure-Writable $rk)
+        $names = @((Get-Item -Path $rk).GetValueNames())
+        foreach ($n in $names) {
+            $v = [string](Get-ItemProperty -Path $rk -Name $n -ErrorAction SilentlyContinue).$n
+            if ($v -match 'Imperium') {
+                if ($DryRun) { Write-Host "  [DRY] would remove run key: $n" -ForegroundColor DarkGray }
+                else { Remove-ItemProperty -Path $rk -Name $n -ErrorAction SilentlyContinue; Ok "run key removed: $n" }
+            }
         }
     } catch { }
 }
-$startup = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup'
+$startup = if ($Sandbox) { Join-Path $env:TEMP 'imperium_uninstall_sandbox\startup' } else { Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\Startup' }
 if (Test-Path -LiteralPath $startup) {
     Get-ChildItem -LiteralPath $startup -ErrorAction SilentlyContinue | Where-Object { $_.Name -match 'Imperium' } | ForEach-Object {
-        Remove-Item -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue
-        Ok "startup shortcut removed: $($_.Name)"
+        Remove-Path $_.FullName 'startup shortcut'
     }
 }
-$hosts = Join-Path $env:WINDIR 'System32\drivers\etc\hosts'
-if (Test-Path -LiteralPath $hosts) {
+if (Test-Path -LiteralPath $HostsPath) {
     $inside = $false
     $kept = @()
-    foreach ($line in (Get-Content -LiteralPath $hosts)) {
+    foreach ($line in (Get-Content -LiteralPath $HostsPath)) {
         if ($line -eq '# BEGIN IMPERIUM OS') { $inside = $true; continue }
         if ($line -eq '# END IMPERIUM OS') { $inside = $false; continue }
         if (-not $inside -and $line -notmatch '^\s*127\.0\.0\.1\s+(facebook|instagram|tiktok|x|twitter|snapchat|threads|discord|t|me|web\.telegram|telegram|pinterest|tumblr|netflix|primevideo|disneyplus|hbo|hulu|twitch|kick|crunchyroll|spotify|steampowered|store\.steampowered|epicgames|gog|roblox|espn|marca|dazn|omegle|chatroulette|omegle\.tv|chathub|emeraldchat|doubleclick|googleadservices|taboola|outbrain)\.') { $kept += $line }
     }
-    Set-Content -LiteralPath $hosts -Value $kept -Encoding ascii
-    Ok 'hosts block removed'
+    if ($DryRun) { Write-Host "  [DRY] would rewrite hosts (drop Imperium block): $HostsPath" -ForegroundColor DarkGray }
+    else { Set-Content -LiteralPath $HostsPath -Value $kept -Encoding ascii; Ok 'hosts block removed' }
 }
 ipconfig /flushdns | Out-Null
 
@@ -537,22 +647,31 @@ foreach ($root in $PolicyRoots) {
     try {
         $fc = Join-Path $root 'ExtensionInstallForcelist'
         if (Test-Path -LiteralPath $fc) {
-            foreach ($n in @((Get-Item -LiteralPath $fc).GetValueNames())) {
-                foreach ($id in $Ids) { if (([string](Get-Item -LiteralPath $fc).GetValue($n)) -like "$id;*") { $problems += "forcelist still points to Imperium: $root" } }
+            $fck = Get-Item -LiteralPath $fc
+            foreach ($n in @($fck.GetValueNames())) {
+                foreach ($id in $Ids) { if (([string]$fck.GetValue($n)) -like "$id;*") { $problems += "forcelist still points to Imperium: $root" } }
             }
         }
         $raw = [string](Get-Item -LiteralPath $root).GetValue('ExtensionSettings')
         if ($raw) { foreach ($id in $Ids) { if ($raw -like "*$id*") { $problems += "ExtensionSettings still references Imperium: $root" } } }
     } catch { }
 }
-foreach ($root in @('HKLM:\SOFTWARE\Google\Chrome\Extensions','HKCU:\SOFTWARE\Google\Chrome\Extensions','HKLM:\SOFTWARE\Microsoft\Edge\Extensions','HKCU:\SOFTWARE\Microsoft\Edge\Extensions')) {
+foreach ($root in $ExtRoots) {
     foreach ($id in $Ids) { if (Test-Path -LiteralPath (Join-Path $root $id)) { $problems += "external extension still registered: $root\$id" } }
 }
-foreach ($d in @((Join-Path $env:LOCALAPPDATA 'ImperiumOS'), (Join-Path $env:ProgramData 'ImperiumOS'))) {
+foreach ($d in @((Join-Path $LocalRoot 'ImperiumOS'), (Join-Path $ProgramRoot 'ImperiumOS'))) {
     if (Test-Path -LiteralPath $d) { $problems += "folder still present: $d" }
 }
-if ($problems.Count -eq 0) {
-    Write-Host ""
+Write-Host ""
+if ($DryRun) {
+    Write-Host "==============================================" -ForegroundColor DarkGray
+    Write-Host "  DRY-RUN FINISHED (nothing was changed)" -ForegroundColor DarkGray
+    Write-Host "==============================================" -ForegroundColor DarkGray
+} elseif ($Sandbox) {
+    Write-Host "==============================================" -ForegroundColor Cyan
+    Write-Host "  SANDBOX RUN FINISHED" -ForegroundColor Cyan
+    Write-Host "==============================================" -ForegroundColor Cyan
+} elseif ($problems.Count -eq 0) {
     Write-Host "==============================================" -ForegroundColor Green
     Write-Host "  IMPERIUM OS FULLY REMOVED" -ForegroundColor Green
     Write-Host "==============================================" -ForegroundColor Green
@@ -560,13 +679,12 @@ if ($problems.Count -eq 0) {
     Write-Host "  Note: your browser no longer has the focus guard (incognito," -ForegroundColor DarkGray
     Write-Host "        widgets, Store access and profile restrictions are back to normal)." -ForegroundColor DarkGray
 } else {
-    Write-Host ""
     Write-Host "  UNINSTALL FINISHED WITH WARNINGS:" -ForegroundColor Yellow
     foreach ($p in $problems) { Write-Host "   - $p" -ForegroundColor Yellow }
     Write-Host "  Restart Chrome/Edge and re-check." -ForegroundColor Yellow
 }
 Write-Host ""
-Read-Host "Press ENTER to close"
+if (-not $DryRun -and -not $Sandbox) { Read-Host "Press ENTER to close" }
 </pre>
       </div>
       <!-- ============ SUPPORT ============ -->
@@ -650,7 +768,7 @@ Read-Host "Press ENTER to close"
     if (window.MutationObserver) new MutationObserver(() => protectBrand(document.body)).observe(document.body, { childList: true, subtree: true });
   </script>
 
-  /* ── Copiar el comando de desinstalación ── IMPERIUM_UNINSTALL_COPY */
+  <script>
   (function(){
     var btn = document.getElementById('copyUninstallBtn');
     var code = document.getElementById('uninstallCode');
@@ -666,9 +784,15 @@ Read-Host "Press ENTER to close"
     }
     btn.addEventListener('click', function(){
       var text = code.textContent;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done, function(){ fallback(text); });
-      } else { fallback(text); }
+      // Feedback inmediato: no esperamos a la promesa del portapapeles (en algunos
+      // entornos se queda pendiente y el botón parecía "muerto").
+      done();
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          var p = navigator.clipboard.writeText(text);
+          if (p && p.catch) p.catch(function(){ fallback(text); });
+        } else { fallback(text); }
+      } catch (e) { fallback(text); }
     });
     function fallback(text){
       var ta = document.createElement('textarea');
@@ -683,5 +807,6 @@ Read-Host "Press ENTER to close"
       done();
     }
   })();
+</script>
 </body>
 </html>
