@@ -346,8 +346,8 @@ Write-Host ""
 Write-Host "==============================================" -ForegroundColor Yellow
 Write-Host "  IMPERIUM OS - FULL UNINSTALL" -ForegroundColor Yellow
 Write-Host "==============================================" -ForegroundColor Yellow
-if ($DryRun)  { Write-Host "  (DRY-RUN: no se modifica nada)" -ForegroundColor DarkGray }
-if ($Sandbox) { Write-Host "  (SANDBOX: se opera sobre rutas/registro temporales)" -ForegroundColor DarkGray }
+if ($DryRun)  { Write-Host "  (DRY-RUN: nothing is changed)" -ForegroundColor DarkGray }
+if ($Sandbox) { Write-Host "  (SANDBOX: operating on temporary paths/registry)" -ForegroundColor DarkGray }
 Write-Host ""
 Say "[1/8] Removing scheduled tasks..."
 $TaskNames = @(
@@ -453,7 +453,7 @@ Ok 'policy ACLs normalized'
 Say "[5/8] Removing extension policies and restoring browser defaults..."
 foreach ($root in $PolicyRoots) {
     if (-not (Test-Path -LiteralPath $root)) { continue }
-    if (-not (Ensure-Writable $root)) { Warn "la clave de politica no es escribible: $root" }
+    if (-not (Ensure-Writable $root)) { Warn "policy key is not writable: $root" }
     $cur = Get-ItemProperty -Path $root -Name 'ExtensionSettings' -ErrorAction SilentlyContinue
     $raw = if ($cur) { [string]$cur.ExtensionSettings } else { '' }
     if ($raw) {
@@ -736,6 +736,32 @@ if (-not $DryRun -and -not $Sandbox) { Read-Host "Press ENTER to close" }</pre>
       label.textContent = 'COPIED';
       btn.classList.add('copied');
       setTimeout(function(){ label.textContent = 'COPY UNINSTALL'; btn.classList.remove('copied'); }, 2000);
+    }
+    function copyTextarea(text){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly','');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch(e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+    function fail(){
+      label.textContent = 'COPY FAILED - SELECT MANUALLY';
+      btn.classList.remove('copied');
+      try {
+        var r = document.createRange();
+        r.selectNodeContents(code);
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      } catch(e) {}
     }
     function copyTextarea(text){
       var ta = document.createElement('textarea');
