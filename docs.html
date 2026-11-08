@@ -322,10 +322,12 @@ function Remove-Path([string]$Path, [string]$What) {
 function Remove-Task([string]$Name) {
     if (-not (Get-ScheduledTask -TaskName $Name -ErrorAction SilentlyContinue)) { return }
     if ($DryRun) { Write-Host "  [DRY] would unregister task: $Name" -ForegroundColor DarkGray; return }
+    if ($Sandbox) { Write-Host "  [SANDBOX] would unregister task: $Name" -ForegroundColor DarkGray; return }
     Unregister-ScheduledTask -TaskName $Name -Confirm:$false -ErrorAction SilentlyContinue
     Ok "task removed: $Name"
 }
 function Stop-Listener([int]$Port) {
+    if ($Sandbox) { Write-Host "  [SANDBOX] would stop any listener on port $Port" -ForegroundColor DarkGray; return }
     try {
         Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | ForEach-Object {
             $proc = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue
@@ -339,6 +341,7 @@ function Stop-Listener([int]$Port) {
 }
 function Remove-UrlAcl([string]$Url) {
     if ($DryRun) { Write-Host "  [DRY] would delete urlacl: $Url" -ForegroundColor DarkGray; return }
+    if ($Sandbox) { Write-Host "  [SANDBOX] would delete urlacl: $Url" -ForegroundColor DarkGray; return }
     netsh http delete urlacl url=$Url | Out-Null
     Ok 'urlacl removed'
 }
@@ -464,7 +467,7 @@ foreach ($root in $PolicyRoots) {
                 if ($obj.PSObject.Properties.Name -contains $id) { $obj.PSObject.Properties.Remove($id); $changed = $true }
             }
             if ($changed) {
-                if ($DryRun) { Write-Host "  [DRY] would clean ExtensionSettings at $root" -ForegroundColor DarkGray }
+                if ($DryRun) { Write-Host "  [DRY] would clean ExtensionSettings value at $root" -ForegroundColor DarkGray }
                 elseif ($obj.PSObject.Properties.Count -gt 0) {
                     Set-ItemProperty -Path $root -Name 'ExtensionSettings' -Value ($obj | ConvertTo-Json -Compress)
                 } else {
@@ -473,6 +476,44 @@ foreach ($root in $PolicyRoots) {
             }
         } catch {
             if (-not $DryRun) { Remove-ItemProperty -Path $root -Name 'ExtensionSettings' -ErrorAction SilentlyContinue }
+        }
+    }
+    $esKey = Join-Path $root 'ExtensionSettings'
+    if (Test-Path -LiteralPath $esKey) {
+        [void](Ensure-Writable $esKey)
+        $esNames = @((Get-Item -Path $esKey).GetValueNames())
+        foreach ($id in $Ids) {
+            if ($esNames -contains $id) {
+                if ($DryRun) { Write-Host "  [DRY] would drop ExtensionSettings id $id at $root" -ForegroundColor DarkGray }
+                else { Remove-ItemProperty -Path $esKey -Name $id -ErrorAction SilentlyContinue; Ok "ExtensionSettings id removed: $id" }
+            }
+        }
+        if (-not $DryRun -and @((Get-Item -Path $esKey).GetValueNames()).Count -eq 0 -and @(Get-ChildItem -LiteralPath $esKey -ErrorAction SilentlyContinue).Count -eq 0) {
+            Remove-Item -LiteralPath $esKey -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+    foreach ($listName in @('ExtensionInstallForcelist','ExtensionInstallAllowlist')) {
+        $rootNames = @((Get-Item -Path $root).GetValueNames())
+        if ($rootNames -notcontains $listName) { continue }
+        $val = (Get-ItemProperty -Path $root -Name $listName -ErrorAction SilentlyContinue).$listName
+        $items = @()
+        if ($val -ne $null) { $items = @($val) | Where-Object { "$_" -ne '' } }
+        $keep = @()
+        foreach ($it in $items) {
+            $hit = $false
+            foreach ($id in $Ids) {
+                if ("$it" -eq $id -or "$it" -like "$id;*" -or "$it" -like "$id*") { $hit = $true }
+            }
+            if (-not $hit) { $keep += "$it" }
+        }
+        if ($keep.Count -eq $items.Count) { continue }
+        if ($DryRun) { Write-Host "  [DRY] would clean $listName value at $root" -ForegroundColor DarkGray; continue }
+        if ($keep.Count -gt 0) {
+            New-ItemProperty -Path $root -Name $listName -PropertyType MultiString -Value ([string[]]$keep) -Force | Out-Null
+            Ok "$listName value cleaned at $root"
+        } else {
+            Remove-ItemProperty -Path $root -Name $listName -ErrorAction SilentlyContinue
+            Ok "$listName value removed at $root"
         }
     }
     foreach ($listName in @('ExtensionInstallForcelist','ExtensionInstallAllowlist')) {
@@ -484,7 +525,7 @@ foreach ($root in $PolicyRoots) {
             $v = [string](Get-ItemProperty -Path $listPath -Name $name -ErrorAction SilentlyContinue).$name
             foreach ($id in $Ids) {
                 if ($v -eq $id -or $v -like "$id;*") {
-                    if ($DryRun) { Write-Host "  [DRY] would drop $listName\$name at $root" -ForegroundColor DarkGray }
+                    if ($DryRun) { Write-Host "  [DRY] would drop $listName value $name at $root" -ForegroundColor DarkGray }
                     else { Remove-ItemProperty -Path $listPath -Name $name -ErrorAction SilentlyContinue }
                 }
             }
@@ -493,14 +534,21 @@ foreach ($root in $PolicyRoots) {
             Remove-Item -LiteralPath $listPath -Recurse -Force -ErrorAction SilentlyContinue
         }
     }
+    $blNames = @((Get-Item -Path $root).GetValueNames())
+    if ($blNames -contains 'ExtensionInstallBlocklist') {
+        if ($DryRun) { Write-Host "  [DRY] would remove ExtensionInstallBlocklist value at $root" -ForegroundColor DarkGray }
+        else { Remove-ItemProperty -Path $root -Name 'ExtensionInstallBlocklist' -ErrorAction SilentlyContinue; Ok 'ExtensionInstallBlocklist value removed' }
+    }
     if (Test-Path -LiteralPath (Join-Path $root 'ExtensionInstallBlocklist')) {
-        if ($DryRun) { Write-Host "  [DRY] would remove ExtensionInstallBlocklist at $root" -ForegroundColor DarkGray }
+        if ($DryRun) { Write-Host "  [DRY] would remove ExtensionInstallBlocklist key at $root" -ForegroundColor DarkGray }
         else { Remove-Item -LiteralPath (Join-Path $root 'ExtensionInstallBlocklist') -Recurse -Force -ErrorAction SilentlyContinue }
     }
     foreach ($name in @(
         'IncognitoModeAvailability','InPrivateModeAvailability','BrowserGuestModeEnabled',
         'BrowserAddPersonEnabled','BrowserAddProfileEnabled','BrowserProfilePickerAvailability',
-        'DisablePrivateBrowsing','PrivateBrowsing','PreventEdgeDownloadEnabled'
+        'DisablePrivateBrowsing','PrivateBrowsing','PreventEdgeDownloadEnabled',
+        'ExtensionsManageEnabled','ExtensionAllowedTypes','DeveloperToolsAvailability',
+        'ExtensionInstallAllowed','ForceInPrivateModeEnabled'
     )) {
         if ($DryRun) { Write-Host "  [DRY] would restore default: $root\$name" -ForegroundColor DarkGray }
         else { Remove-ItemProperty -Path $root -Name $name -ErrorAction SilentlyContinue }
@@ -736,6 +784,58 @@ if (-not $DryRun -and -not $Sandbox) { Read-Host "Press ENTER to close" }</pre>
       label.textContent = 'COPIED';
       btn.classList.add('copied');
       setTimeout(function(){ label.textContent = 'COPY UNINSTALL'; btn.classList.remove('copied'); }, 2000);
+    }
+    function copyTextarea(text){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly','');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch(e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+    function fail(){
+      label.textContent = 'COPY FAILED - SELECT MANUALLY';
+      btn.classList.remove('copied');
+      try {
+        var r = document.createRange();
+        r.selectNodeContents(code);
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      } catch(e) {}
+    }
+    function copyTextarea(text){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.setAttribute('readonly','');
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '0';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      var ok = false;
+      try { ok = document.execCommand('copy'); } catch(e) { ok = false; }
+      document.body.removeChild(ta);
+      return ok;
+    }
+    function fail(){
+      label.textContent = 'COPY FAILED - SELECT MANUALLY';
+      btn.classList.remove('copied');
+      try {
+        var r = document.createRange();
+        r.selectNodeContents(code);
+        var s = window.getSelection();
+        s.removeAllRanges();
+        s.addRange(r);
+      } catch(e) {}
     }
     function copyTextarea(text){
       var ta = document.createElement('textarea');
